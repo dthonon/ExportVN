@@ -2,6 +2,7 @@ Procédure d'installation sur CentOS 7
 
 1) ajouter le repository epel
    sudo yum install epel-release
+   sudo yum repolist
    sudo yum update
    
 2) installer PHP et les modules requis : 
