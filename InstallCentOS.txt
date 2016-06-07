@@ -1,0 +1,22 @@
+Procédure d'installation sur CentOS 7
+
+1) ajouter le repository epel
+   sudo yum install epel-release
+   sudo yum update
+   
+2) installer PHP et les modules requis : 
+   sudo yum install php php-pear php-pgsql
+   
+3) installer log4php
+   pear channel-discover pear.apache.org/log4php
+   pear install log4php/Apache_log4php
+   
+4) installer les scripts de téléchargement
+   git clone https://github.com/dthonon/ExportVN
+   
+5) configurer une copie des scripts de lancement (avec xx à votre convenance)
+   cd ExportVN
+   cp ChargePsql.sh ChargePsql_xx.sh
+   cp ExportJson.sh ExportJson_xx.sh
+   puis éditez ces 2 fichiers pour renseigner les valeurs propres à votre site
+   
