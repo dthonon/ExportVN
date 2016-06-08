@@ -887,16 +887,16 @@ $obs_dropped = TRUE;
 
 // Loop on dowloaded files
 for ($fic = $file_min; $fic < $file_max; $fic++) {
-    $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
     if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json")) {
+        $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
         // Analyse du fichier
         $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
     
         $logger->trace("Début de l'analyse");
         $data = json_decode($response, true);
         
-		$sightings = count($data["data"]["sightings"]);
-		$forms = count($data["data"]["forms"]);
+		$sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
+		$forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
         $logger->info("Lu " . $sightings . " élements sightings");
         $logger->info("Lu " . $forms . " élements forms");
 		
