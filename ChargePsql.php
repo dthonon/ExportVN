@@ -878,8 +878,8 @@ try {
 
 $ddlNT = array(); // List of columns, kept across files
 
-$file_min = 136;    # min file for debug
-$file_max = 137; # max file for debug
+$file_min = 1;    # min file for debug
+$file_max = 1000; # max file for debug
 
 // First, drop observations table
 dropTable($logger, $dbh, "observations");
