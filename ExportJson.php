@@ -317,8 +317,9 @@ function storeTaxoGroups($logger, $options, $oauth)
         foreach ($data["data"] as $key => $value) {
 			// $logger->trace(print_r($data["data"][$key], true));
 			$taxo = $data["data"][$key];
+			$logger->info("Groupe taxonomique : " . $taxo["id"] . " = " . $taxo["name"] . ", access = " . $taxo["access_mode"]);
 			if ($taxo["access_mode"] != "none") {
-				// $logger->trace("Groupe taxonomique : " . $taxo["id"] . " = " . $taxo["name"]);
+				$logger->info("Taxon à télécharger");
 				$taxo_list[] = $taxo["id"];
 			}
 		}

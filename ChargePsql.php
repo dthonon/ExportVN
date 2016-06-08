@@ -521,8 +521,8 @@ function bExtendedInfos($data, &$obs, $suffix)
                 $logger->trace("    " . $suffix . "mortality =>");
                 bExtendedInfoMortality($value, $obs, $suffix . $key . "_");
                 break;
-            case "bearded_vulture":
-                $logger->trace("    " . $suffix . "bearded_vulture =>");
+            case "gypaetus_barbatus":
+                $logger->trace("    " . $suffix . "gypaetus_barbatus =>");
                 bExtendedInfoBeardedVultures($value, $obs, $suffix . $key . "_");
                 break;
             case "colony":
@@ -895,32 +895,32 @@ for ($fic = $file_min; $fic < $file_max; $fic++) {
         $logger->trace("Début de l'analyse");
         $data = json_decode($response, true);
         
-		$sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
-		$forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
-        $logger->info("Lu " . $sightings . " élements sightings");
-        $logger->info("Lu " . $forms . " élements forms");
+		$sightings = (is_array($data) && (array_key_exists("sightings", $data["data"]))) ? count($data["data"]["sightings"]) : 0;
+		$forms = (is_array($data) && (array_key_exists("forms", $data["data"]))) ? count($data["data"]["forms"]) : 0;
 		
 		// Empty file => exit
         if ($sightings + $forms == 0) {
-            $logger->info("Fin de réception des données");
-            break; # No more data to import
-        }
-    
-        reset($data);
-        foreach ($data["data"] as $key => $value) {
-			$logger->trace("Analyse de l'élement : " . $key);
-            switch ($key) {
-                case "sightings":
-                    $ddlNT = bSightings($value, $dbh, $obs_dropped, $ddlNT);
-                     break;
-                case "forms":
-                    $ddlNT = bForms($value, $dbh, $obs_dropped, $ddlNT);
-                    break;
-                default:
-                    $logger->warn("Element racine inconnu: " . $key);
-                }
-        }
-    $logger->info("Fin de l'analyse d'un fichier");
+            $logger->warn("Fichier de données vide");
+        } else {  
+			$logger->info("Chargement de " . $sightings . " élements sightings");
+			$logger->info("Chargement de " . $forms . " élements forms");
+			reset($data);
+			foreach ($data["data"] as $key => $value) {
+				$logger->trace("Analyse de l'élement : " . $key);
+				switch ($key) {
+					case "sightings":
+						$ddlNT = bSightings($value, $dbh, $obs_dropped, $ddlNT);
+						 break;
+					case "forms":
+						$ddlNT = bForms($value, $dbh, $obs_dropped, $ddlNT);
+						break;
+					default:
+						$logger->warn("Element racine inconnu: " . $key);
+					}
+			}
+			$logger->info("Fin de l'analyse d'un fichier");
+		}
+
     }
 }
 
