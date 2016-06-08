@@ -15,9 +15,9 @@ Procédure d'installation sur CentOS 7
 4) installer les scripts de téléchargement
    git clone https://github.com/dthonon/ExportVN
    
-5) configurer une copie des scripts de lancement (avec xx à votre convenance)
+5) configurer une copie locale des scripts de lancement
    cd ExportVN
-   cp ChargePsql.sh ChargePsql_xx.sh
-   cp ExportJson.sh ExportJson_xx.sh
+   cp ChargePsql.sh ChargePsql_local.sh
+   cp ExportJson.sh ExportJson_local.sh
    puis éditez ces 2 fichiers pour renseigner les valeurs propres à votre site
    
