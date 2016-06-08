@@ -3,7 +3,7 @@
  
     <appender name="myConsoleAppender" class="LoggerAppenderConsole">
         <layout class="LoggerLayoutPattern">
-            <param name="conversionPattern" value="%date - %level - %message%newline" />
+            <param name="conversionPattern" value="%date{Y-m-d H:i:s.u} - %level - %message%newline" />
         </layout>
     </appender>
  
