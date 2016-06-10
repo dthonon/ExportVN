@@ -63,7 +63,7 @@ function storePlaces($logger, $options, $oauth)
     do {
         // Get data
         $oauth->enableDebug();
-        $logger->debug("Demande de données " . $i);
+        $logger->debug("Demande de places " . $i);
         $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
         $logger->trace("Réception des données");
@@ -117,12 +117,12 @@ function storeAdminUnits($logger, $options, $oauth)
     
     $i = 1;
     // Get data
-    $logger->debug("Demande de données " . $i);
+    $logger->debug("Demande de local_admin_units " . $i);
     $logger->trace(" => params:" . print_r($params, TRUE));
     $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
     $logger->trace("Réception des données");
     $response = $oauth->getLastResponse();
-    file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/admin_units_' . $i . '.json', $response);
+    file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/local_admin_units_' . $i . '.json', $response);
     $data = json_decode($response, true);
     // $logger->trace(print_r($data["data"], true));
     $logger->debug("Reçu " . count($data["data"]) . " élements");
@@ -156,7 +156,7 @@ function storeEntities($logger, $options, $oauth)
     $i = 1;
     // Get data
     try {
-		$logger->trace("Demande de données");
+		$logger->trace("Demande de entities");
 		$oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
 		$logger->trace("Réception des données");
 		$response = $oauth->getLastResponse();
@@ -200,11 +200,11 @@ function storeExport_Orgs($logger, $options, $oauth)
     
     $i = 1;
     // Get data
-    $logger->trace("Demande de données");
+    $logger->trace("Demande de export_organizations");
     $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
     $logger->trace("Réception des données");
     $response = $oauth->getLastResponse();
-    file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/export_orgs_' . $i . '.json', $response);
+    file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/export_organizations_' . $i . '.json', $response);
     $data = json_decode($response, true);
     // $logger->trace(print_r($data["data"], true));
     $logger->debug("Reçu " . count($data["data"]) . " élements");
@@ -238,7 +238,7 @@ function storeFamilies($logger, $options, $oauth)
     do {
         // Get data
         $oauth->enableDebug();
-        $logger->debug("Demande de données " . $i);
+        $logger->debug("Demande de families " . $i);
         $logger->trace(" => params:" . print_r($params, TRUE));
         $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
@@ -296,7 +296,7 @@ function storeTaxoGroups($logger, $options, $oauth)
     do {
         // Get data
         $oauth->enableDebug();
-        $logger->debug("Demande de données " . $i);
+        $logger->debug("Demande de taxo_groups " . $i);
         $logger->trace(" => params:" . print_r($params, TRUE));
         $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
@@ -362,7 +362,7 @@ function storeSpecies($logger, $options, $oauth)
     do {
         // Get data
         $oauth->enableDebug();
-        $logger->debug("Demande de données " . $i);
+        $logger->debug("Demande de species " . $i);
         $logger->trace(" => params:" . print_r($params, TRUE));
         $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
@@ -431,7 +431,7 @@ function storeObservations($logger, $options, $oauth)
 		do {
 			// Get data
 			$oauth->enableDebug();
-			$logger->debug("Demande de données " . $i . ", groupe taxo " . $id_taxo);
+			$logger->debug("Demande d'observations " . $i . ", groupe taxo " . $id_taxo);
 			$logger->trace(" => params:" . print_r($params, TRUE));
 			try {
 				$oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
@@ -444,13 +444,33 @@ function storeObservations($logger, $options, $oauth)
 				$pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
 				$logger->debug("Reçu page = " . $pageNum . ", key = |" . rtrim($pageKey[1]) . "|");
 				$data = json_decode($response, true);
-				$logger->debug("Reçu " . count($data["data"]["sightings"]) . " élements");
+			
+				$sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
+				$forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
+				$logger->debug("Lu " . $sightings . " élements sightings");
+				$logger->debug("Lu " . $forms . " élements forms");
+				
+				// Empty file => exit
+				if ($sightings + $forms == 0) {
+					break;
+				}
+				file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json', 
+								  $response);
+				
+				$params = array(
+					'user_pw' => $options['user_pw'],
+					'user_email' => $options['user_email'],
+					'id_taxo_group' => $id_taxo,
+					'pagination_key' => rtrim($pageKey[1])
+				);
+				$i += 1;
+				
 			} catch (\OAuthException $oauthException) {
 				$nb_error += 1;
 				$response = $oauth->getLastResponse();
+				$json_error = json_decode($oauthException->lastResponse, true);
 				$logger->error("Erreur de réception numéro : " . $nb_error . ", code : " . var_export($json_error, true));
 				$logger->error(print_r($oauth->getLastResponseInfo(), true));
-				$json_error = json_decode($oauthException->lastResponse, true);
 				$logger->error("Message d'erreur : " . $oauthException->getMessage());
 				if ($nb_error > 5) {
 					$logger->fatal("Arrêt après 5 erreurs");
@@ -458,26 +478,6 @@ function storeObservations($logger, $options, $oauth)
 				}
 				sleep(10); // Wait before next request
 			};
-			
-			$sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
-			$forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
-			$logger->debug("Lu " . $sightings . " élements sightings");
-			$logger->debug("Lu " . $forms . " élements forms");
-			
-			// Empty file => exit
-			if ($sightings + $forms == 0) {
-				break;
-			}
-			file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json', 
-							  $response);
-			
-			$params = array(
-				'user_pw' => $options['user_pw'],
-				'user_email' => $options['user_email'],
-				'id_taxo_group' => $id_taxo,
-				'pagination_key' => rtrim($pageKey[1])
-			);
-			$i += 1;
 		} while ($i < 500); // Limit to 500 request, to avoid bug infinite loop
 	}
 }
