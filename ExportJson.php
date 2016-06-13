@@ -427,7 +427,7 @@ function storeObservations($logger, $options, $oauth)
 		);
 
     		
-		$nb_error = 0; // Error counter to stop if to many
+		$nb_error = 0; // Error counter to stop if to many consecutive errors
 		do {
 			// Get data
 			$oauth->enableDebug();
@@ -464,6 +464,7 @@ function storeObservations($logger, $options, $oauth)
 					'pagination_key' => rtrim($pageKey[1])
 				);
 				$i += 1;
+				$nb_error = 0; // No error: reset counter
 				
 			} catch (\OAuthException $oauthException) {
 				$nb_error += 1;
