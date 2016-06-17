@@ -6,11 +6,11 @@ Procédure d'installation sur CentOS 7
    sudo yum update
    
 2) installer PHP et les modules requis : 
-   sudo yum install php php-pear php-pgsql
+   sudo yum install php php-pear php-pgsql php-pecl-oauth
    
 3) installer log4php
-   pear channel-discover pear.apache.org/log4php
-   pear install log4php/Apache_log4php
+   sudo pear channel-discover pear.apache.org/log4php
+   sudo pear install log4php/Apache_log4php
    
 4) installer les scripts de téléchargement
    git clone https://github.com/dthonon/ExportVN
