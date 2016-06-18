@@ -1,23 +1,23 @@
 Procédure d'installation sur CentOS 7
 
 1) ajouter le repository epel
-   sudo yum install epel-release
-   sudo yum repolist
-   sudo yum update
+   $ sudo yum install epel-release
+   $ sudo yum update
    
 2) installer PHP et les modules requis : 
-   sudo yum install php php-pear php-pgsql php-pecl-oauth
+   $ sudo yum install php php-pear php-pgsql php-pecl-oauth
+   configurez ($ sudo nano /etc/php.ini) le paramètre date.timezone = Europe/Paris
    
 3) installer log4php
-   sudo pear channel-discover pear.apache.org/log4php
-   sudo pear install log4php/Apache_log4php
+   $ sudo pear channel-discover pear.apache.org/log4php
+   $ sudo pear install log4php/Apache_log4php
    
 4) installer les scripts de téléchargement
-   git clone https://github.com/dthonon/ExportVN
+   $ git clone https://github.com/dthonon/ExportVN
    
 5) configurer une copie locale des scripts de lancement
-   cd ExportVN
-   cp ChargePsql.sh ChargePsql_local.sh
-   cp ExportJson.sh ExportJson_local.sh
+   $ cd ExportVN
+   $ cp ChargePsql.sh ChargePsql_local.sh
+   $ cp ExportJson.sh ExportJson_local.sh
    puis éditez ces 2 fichiers pour renseigner les valeurs propres à votre site
    

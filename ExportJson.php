@@ -4,7 +4,7 @@
  *
  * PHP version 5
  *
- * Copyright (c) 2015 Daniel Thonon <d.thonon9@gmail.com>
+ * Copyright (c) 2016 Daniel Thonon <d.thonon9@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
