@@ -4,7 +4,7 @@ Procédure d'installation sous Ubuntu 16.04
    $ sudo apt install git
 
 2) installer PHP et les modules requis
-   $ sudo apt install php php-pear php-pgsql
+   $ sudo apt install php php-pear php-pgsql php-oauth
 
 3) installer log4php
    $ sudo pear channel-discover pear.apache.org/log4php
