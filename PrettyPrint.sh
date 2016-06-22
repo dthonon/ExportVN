@@ -1,11 +1,16 @@
 #!/bin/bash
-# find ~/json -name '*.json' -execdir echo $(basename '{}') ';' 
-# find ~/json -name '*.json' -execdir python -m json.tool ~/json/'{}' > ~/json2/'{}' ';' 
 
 for s in ~/json/*.json 
 do
    f=${s##*/}
-   echo "Processing $f"
-   python -m json.tool ~/json/$f > ~/json2/$f
-   # python -m json.tool ~/json/$f | bzip2 -9 > ~/json2/$f.bz2
+   if [ "$1" != "" ]; then
+      echo "Pretty Printing to json2/$f"
+	  cat ~/json/$f | json_reformat > ~/json2/$f
+      # python -m json.tool ~/json/$f > ~/json2/$f
+   else
+      echo "Pretty Printing to json2/$f.bz2"
+	  cat ~/json/$f | json_reformat | bzip2 -9 > ~/json2/$f.bz2
+      # python -m json.tool ~/json/$f | bzip2 -9 > ~/json2/$f.bz2
+   fi
+
 done
