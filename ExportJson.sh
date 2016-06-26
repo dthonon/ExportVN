@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Download json files from biolovision, usin API V1.
+# Download json files from biolovision, using API V1.
 #
 # Copyright (c) 2016, Daniel Thonon
 #  All rights reserved.
