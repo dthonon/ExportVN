@@ -207,13 +207,18 @@ function createTable($logger, $data, $dbh, $table)
 }
 
 /**
- * Recursive descent parser functions, named by element
+ * Store places
+ *
+ */
+
+/**
+ * Recursive descent parser functions for observations, named by element
  *  - Depending on element, either warning for unknown element, or ignored
  *
- * @param void $logger
- *            Logger for debug message
+ * @param array $data
+ *            Json element to parse
  * @param array &$obs
- *            Data element to parse
+ *            Observation being filled by parser, using key as column name in general
  * @param array $suffix
  *            for sub-elements, suffix to prepend to column name
  * @return void
@@ -671,7 +676,11 @@ function bObserver($data, &$obs)
                 $logger->trace("  flight_number => " . $data["flight_number"]);
                 $obs["flight_number"] = $data["flight_number"];
                 break;
-            case "project_code":
+            case "has_death":
+                $logger->trace("  has_death => " . $data["has_death"]);
+                $obs["has_death"] = $data["has_death"];
+                break;
+           case "project_code":
                 $logger->trace("  project_code => " . $data["project_code"]);
                 $obs["project_code"] = $data["project_code"];
                 break;
@@ -842,6 +851,58 @@ function bForms($data, $dbh, &$obs_dropped, $ddlNT)
     return($ddlNT);
 }
 
+function observations($dbh)
+{
+    global $logger;
+    
+    $ddlNT = array(); // List of columns, kept across files
+
+    $file_min = 1;    # min file for debug
+    $file_max = 1000; # max file for debug
+
+    // First, drop observations table
+    dropTable($logger, $dbh, "observations");
+    $obs_dropped = TRUE;
+
+    // Loop on dowloaded files
+    for ($fic = $file_min; $fic < $file_max; $fic++) {
+        if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json")) {
+            $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
+            // Analyse du fichier
+            $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
+        
+            $logger->trace("Début de l'analyse des observations");
+            $data = json_decode($response, true);
+            
+            $sightings = (is_array($data) && (array_key_exists("sightings", $data["data"]))) ? count($data["data"]["sightings"]) : 0;
+            $forms = (is_array($data) && (array_key_exists("forms", $data["data"]))) ? count($data["data"]["forms"]) : 0;
+            
+            // Empty file => exit
+            if ($sightings + $forms == 0) {
+                $logger->warn("Fichier de données vide");
+            } else {  
+                $logger->info("Chargement de " . $sightings . " élements sightings");
+                $logger->info("Chargement de " . $forms . " élements forms");
+                reset($data);
+                foreach ($data["data"] as $key => $value) {
+                    $logger->trace("Analyse de l'élement : " . $key);
+                    switch ($key) {
+                        case "sightings":
+                            $ddlNT = bSightings($value, $dbh, $obs_dropped, $ddlNT);
+                             break;
+                        case "forms":
+                            $ddlNT = bForms($value, $dbh, $obs_dropped, $ddlNT);
+                            break;
+                        default:
+                            $logger->warn("Element racine inconnu: " . $key);
+                        }
+                }
+                $logger->info("Fin de l'analyse d'un fichier d'observations");
+            }
+
+        }
+    }
+}
 // ///////////////////////// Main ////////////////////////////////////
 // Larger memory to handle observations
 ini_set('memory_limit', '1024M');
@@ -876,53 +937,7 @@ try {
     die();
 }
 
-$ddlNT = array(); // List of columns, kept across files
-
-$file_min = 1;    # min file for debug
-$file_max = 1000; # max file for debug
-
-// First, drop observations table
-dropTable($logger, $dbh, "observations");
-$obs_dropped = TRUE;
-
-// Loop on dowloaded files
-for ($fic = $file_min; $fic < $file_max; $fic++) {
-    if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json")) {
-        $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
-        // Analyse du fichier
-        $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
-    
-        $logger->trace("Début de l'analyse");
-        $data = json_decode($response, true);
-        
-		$sightings = (is_array($data) && (array_key_exists("sightings", $data["data"]))) ? count($data["data"]["sightings"]) : 0;
-		$forms = (is_array($data) && (array_key_exists("forms", $data["data"]))) ? count($data["data"]["forms"]) : 0;
-		
-		// Empty file => exit
-        if ($sightings + $forms == 0) {
-            $logger->warn("Fichier de données vide");
-        } else {  
-			$logger->info("Chargement de " . $sightings . " élements sightings");
-			$logger->info("Chargement de " . $forms . " élements forms");
-			reset($data);
-			foreach ($data["data"] as $key => $value) {
-				$logger->trace("Analyse de l'élement : " . $key);
-				switch ($key) {
-					case "sightings":
-						$ddlNT = bSightings($value, $dbh, $obs_dropped, $ddlNT);
-						 break;
-					case "forms":
-						$ddlNT = bForms($value, $dbh, $obs_dropped, $ddlNT);
-						break;
-					default:
-						$logger->warn("Element racine inconnu: " . $key);
-					}
-			}
-			$logger->info("Fin de l'analyse d'un fichier");
-		}
-
-    }
-}
+observations($dbh);
 
 $dbh = null;
 ?>

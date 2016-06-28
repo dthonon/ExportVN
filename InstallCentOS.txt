@@ -21,3 +21,6 @@ Procédure d'installation sur CentOS 7
    $ cp ExportJson.sh ExportJson_local.sh
    puis éditez ces 2 fichiers pour renseigner les valeurs propres à votre site
    
+6) Optionnel : pour formatter (PrettyPrint.sh) les fichiers json
+   $ sudo yum install yajl
+
