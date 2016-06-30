@@ -854,6 +854,7 @@ function bForms($data, $dbh, &$obs_dropped, $ddlNT)
 function observations($dbh)
 {
     global $logger;
+	global $options;
     
     $ddlNT = array(); // List of columns, kept across files
 
@@ -937,6 +938,7 @@ try {
     die();
 }
 
+// Store observations in database
 observations($dbh);
 
 $dbh = null;
