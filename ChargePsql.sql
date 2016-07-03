@@ -1,12 +1,28 @@
 --
+-- Create indexes on places table
+--
+-- Index: public.idx_places_geom_gist
+-- DROP INDEX public.idx_places_geom_gist;
+SELECT AddGeometryColumn('public', 'places', 'the_geom', 2154, 'POINT', 2);
+UPDATE places SET the_geom = ST_Transform(ST_SetSRID(ST_MakePoint(coord_lon, coord_lat), 4326), 2154);
+CREATE INDEX idx_places_geom_gist ON places USING GIST (the_geom);
+ALTER TABLE places ADD coord_lon_l93 double precision;
+ALTER TABLE places ADD coord_lat_l93 double precision;
+UPDATE places SET coord_lon_l93 = ST_X(the_geom);
+UPDATE places SET coord_lat_l93 = ST_Y(the_geom);
+
+--
 -- Create indexes on observations table
 --
-
 -- Index: public.idx_the_geom_gist
--- DROP INDEX public.idx_the_geom_gist;
-SELECT AddGeometryColumn('public', 'observations', 'the_geom', 4326, 'POINT', 2);
-UPDATE observations SET the_geom = ST_SetSRID(ST_MakePoint(observer_coord_lon, observer_coord_lat), 4326);
-CREATE INDEX idx_the_geom_gist ON observations USING GIST (the_geom);
+-- DROP INDEX public.idx_observations_geom_gist;
+SELECT AddGeometryColumn('public', 'observations', 'the_geom', 2154, 'POINT', 2);
+UPDATE observations SET the_geom = ST_Transform(ST_SetSRID(ST_MakePoint(observer_coord_lon, observer_coord_lat), 4326), 2154);
+CREATE INDEX idx_observations_geom_gist ON observations USING GIST (the_geom);
+ALTER TABLE observations ADD coord_lon_l93 double precision;
+ALTER TABLE observations ADD coord_lat_l93 double precision;
+UPDATE observations SET coord_lon_l93 = ST_X(the_geom);
+UPDATE observations SET coord_lat_l93 = ST_Y(the_geom);
 
 -- -- Index: public.idx_altitude
 -- -- DROP INDEX public.idx_altitude;

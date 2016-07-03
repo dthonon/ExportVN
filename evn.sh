@@ -4,8 +4,8 @@
 # Parameters:
 #     $1: type of action to perform:
 #          - config => Configure parameters for scripts (sites, passwords...).
-#          - export
-#          - load
+#          - download => Export from VisioNature fo json files, using API
+#          - load => Load json files in Postgresql
 #
 # Copyright (c) 2016, Daniel Thonon
 #  All rights reserved.
@@ -31,17 +31,6 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# unset evn_site
-# unset evn_user_email
-# unset evn_user_pw
-# unset evn_consumer_key
-# unset evn_consumer_secret
-# unset evn_file_store
-# unset evn_logging
-# unset evn_db_name
-# unset evn_db_user
-# unset evn_db_pw
 
 cmd=$1
 
@@ -76,6 +65,17 @@ fi
 
 case "$cmd" in
     config)
+		unset evn_site
+		unset evn_user_email
+		unset evn_user_pw
+		unset evn_consumer_key
+		unset evn_consumer_secret
+		unset evn_file_store
+		unset evn_db_name
+		unset evn_db_user
+		unset evn_db_pw
+		unset evn_logging
+
         echo -n "Site VisioNature : "
         read evn_site
 		echo "evn_site=$evn_site" > $evn_conf
@@ -96,7 +96,7 @@ case "$cmd" in
 		echo "evn_file_store=$evn_file_store" >> $evn_conf
 		
         echo -n "Nom de la base postgresql : "
-        read evn_logging
+        read evn_db_name
 		echo "evn_db_name=$evn_db_name" >> $evn_conf
         echo -n "Compte/rôle de la base postgresql : "
         read evn_db_user
@@ -105,7 +105,7 @@ case "$cmd" in
         read evn_db_pw
 		echo "evn_db_pw=$evn_db_pw" >> $evn_conf
 		
-		echo "evn_logging=DEBUG" >> $evn_conf
+		echo "evn_logging=INFO" >> $evn_conf
  	;;
 	
 	download)
@@ -145,7 +145,7 @@ case "$cmd" in
  	;;
    *)
 	echo "Usage: $SCRIPTNAME {config|download|store}" >&2
- 	exit 3
  	;;
 esac
 
+exit 0
