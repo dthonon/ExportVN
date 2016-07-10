@@ -1021,6 +1021,8 @@ $longOpts = array(
 
 $options = getopt($shortOpts, $longOpts);
 
+print_r($options);
+
 // Create logger and set level
 Logger::configure('config.xml');
 $logger = Logger::getRootLogger();

@@ -38,20 +38,15 @@ cmd=$1
 evn_conf=~/.evn.conf
 unset config # clear parameter array
 typeset -A config # init array
-config=( # set default values in config array
-    [evn_site]=""
-    [evn_user_email]=""
-    [evn_user_pw]=""
-)
 
-echo "commande = $cmd"
+# echo "commande = $cmd"
 if [[ "$cmd" != "config" && -f $evn_conf ]]  # Check if exists and not configuring
 then
 	echo "Chargement de la configuration"
 	# Parse configuration file
 	while read line
 	do
-	#    echo $line
+	    echo $line
 		if echo $line | grep -F = &>/dev/null
 		then
 			varname=$(echo "$line" | cut -d '=' -f 1)
@@ -116,11 +111,11 @@ case "$cmd" in
 
 		# Download from biolovision and store in json
 		php ExportJson.php \
-			--site ${config[evn_site]} \
-			--user_email ${config[evn_user_email]} \
-			--user_pw ${config[evn_user_pw]} \
-			--consumer_key ${config[evn_consumer_key]} \
-			--consumer_secret ${config[evn_consumer_secret]} \
+			--site=${config[evn_site]} \
+			--user_email=${config[evn_user_email]} \
+			--user_pw=${config[evn_user_pw]} \
+			--consumer_key=${config[evn_consumer_key]} \
+			--consumer_secret=${config[evn_consumer_secret]} \
 			--file_store=${config[evn_file_store]} \
 			--logging=${config[evn_logging]}
 		
@@ -128,12 +123,11 @@ case "$cmd" in
  	;;
 	
 	store)
-		echo "Lancement du chargement des fichiers json dans la base postgresql à $(date)"
-
+		echo "Chargement des fichiers json dans la base ${config[evn_db_name]} à $(date)"
 		php ChargePsql.php \
-			--db_name ${config[evn_db_name]} \
-			--db_user ${config[evn_db_user]} \
-			--db_pw  ${config[evn_db_pw]}\
+			--db_name=${config[evn_db_name]} \
+			--db_user=${config[evn_db_user]} \
+			--db_pw=${config[evn_db_pw]}\
 			--file_store=${config[evn_file_store]} \
 			--logging=${config[evn_logging]}
 			
