@@ -13,6 +13,7 @@ Procédure d'installation sur CentOS 7
    $ sudo pear install log4php/Apache_log4php
    
 4) installer les scripts de téléchargement
+   $ sudo yum install git
    $ git clone https://github.com/dthonon/ExportVN
    
 5) configurer une copie locale des scripts de lancement

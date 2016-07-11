@@ -1,0 +1,46 @@
+-- Delete existing DB and roles 
+DROP DATABASE IF EXISTS faune_isere;
+DROP ROLE IF EXISTS xfer38;
+DROP ROLE IF EXISTS lpo_isere;
+
+-- Role: lpo_isere
+CREATE ROLE lpo_isere
+  NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+
+-- Role: xfer38
+CREATE ROLE xfer38 LOGIN
+  ENCRYPTED PASSWORD 'md57bf7dbe4fa483bc1fa5edf0cd71069a9'
+  NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
+GRANT lpo_isere TO xfer38;
+
+-- Database: faune_isere
+CREATE DATABASE faune_isere
+  WITH OWNER = lpo_isere
+       ENCODING = 'UTF8'
+       TABLESPACE = pg_default
+       LC_COLLATE = 'fr_FR.UTF-8'
+       LC_CTYPE = 'fr_FR.UTF-8'
+       CONNECTION LIMIT = -1;
+-- GRANT CONNECT, TEMPORARY ON DATABASE faune_isere TO public;
+-- GRANT ALL ON DATABASE faune_isere TO lpo38;
+GRANT ALL ON DATABASE faune_isere TO lpo_isere;
+-- GRANT CONNECT ON DATABASE faune_isere TO nature_isere;
+
+\c faune_isere
+
+CREATE EXTENSION postgis
+  SCHEMA public
+  VERSION "2.2.2";
+
+CREATE EXTENSION postgis_topology
+  SCHEMA topology
+  VERSION "2.2.2";
+
+ALTER DEFAULT PRIVILEGES 
+    GRANT INSERT, SELECT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES
+    TO postgres;
+
+ALTER DEFAULT PRIVILEGES 
+    GRANT INSERT, SELECT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES
+    TO lpo_isere;
+

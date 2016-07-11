@@ -1,6 +1,6 @@
 <?php
 /**
- * Download biolovision data and store in json files for further analysis
+ * Load exported json files to Postgresql database
  *
  * PHP version 5
  *
@@ -207,9 +207,96 @@ function createTable($logger, $data, $dbh, $table)
 }
 
 /**
- * Store places
+ * Loop on json places files and store in database
  *
+ * @param array $dbh
+ *            database handle
+ * @return void
+ * @author Daniel Thonon
+ *        
  */
+
+function places($dbh)
+{
+    global $logger;
+	global $options;
+    
+    $ddlNT = array(); // List of columns, kept across files
+    $file_min = 1;    # min file for debug
+    $file_max = 1000; # max file for debug
+
+	$logger->info("Chargement des fichiers json de places");
+
+    // First, drop places table
+    dropTable($logger, $dbh, "places");
+    $obs_dropped = TRUE;
+
+    // Loop on dowloaded files
+    for ($fic = $file_min; $fic < $file_max; $fic++) {
+        if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json")) {
+            $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
+            // Analyse du fichier
+            $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
+        
+            $logger->trace("Début de l'analyse des places");
+            $data = json_decode($response, true);
+            
+			// Create table on first loop
+			if ($fic == 1) {
+				$ddlNT = createTable($logger, $data["data"], $dbh, "places");
+			}
+			// Insert rows
+			$ddlNT = insertRows($logger, $data["data"], $dbh, "places", $ddlNT);
+        }
+    }
+	
+}
+
+/**
+ * Loop on json species files and store in database
+ *
+ * @param array $dbh
+ *            database handle
+ * @return void
+ * @author Daniel Thonon
+ *        
+ */
+
+function species($dbh)
+{
+    global $logger;
+	global $options;
+    
+    $ddlNT = array(); // List of columns, kept across files
+    $file_min = 1;    # min file for debug
+    $file_max = 1000; # max file for debug
+
+	$logger->info("Chargement des fichiers json de species");
+
+    // First, drop species table
+    dropTable($logger, $dbh, "species");
+    $obs_dropped = TRUE;
+
+    // Loop on dowloaded files
+    for ($fic = $file_min; $fic < $file_max; $fic++) {
+        if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json")) {
+            $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
+            // Analyse du fichier
+            $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
+        
+            $logger->trace("Début de l'analyse des species");
+            $data = json_decode($response, true);
+            
+			// Create table on first loop
+			if ($fic == 1) {
+				$ddlNT = createTable($logger, $data["data"], $dbh, "species");
+			}
+			// Insert rows
+			$ddlNT = insertRows($logger, $data["data"], $dbh, "species", $ddlNT);
+        }
+    }
+	
+}
 
 /**
  * Recursive descent parser functions for observations, named by element
@@ -851,14 +938,27 @@ function bForms($data, $dbh, &$obs_dropped, $ddlNT)
     return($ddlNT);
 }
 
+/**
+ * Loop on json files and call parser on json structure to store in database
+ *
+ * @param array $dbh
+ *            database handle
+ * @return void
+ * @author Daniel Thonon
+ *        
+ */
+
 function observations($dbh)
 {
     global $logger;
+	global $options;
     
     $ddlNT = array(); // List of columns, kept across files
 
     $file_min = 1;    # min file for debug
     $file_max = 1000; # max file for debug
+
+	$logger->info("Chargement des fichiers json d'observations");
 
     // First, drop observations table
     dropTable($logger, $dbh, "observations");
@@ -881,8 +981,8 @@ function observations($dbh)
             if ($sightings + $forms == 0) {
                 $logger->warn("Fichier de données vide");
             } else {  
-                $logger->info("Chargement de " . $sightings . " élements sightings");
-                $logger->info("Chargement de " . $forms . " élements forms");
+                $logger->debug("Chargement de " . $sightings . " élements sightings");
+                $logger->debug("Chargement de " . $forms . " élements forms");
                 reset($data);
                 foreach ($data["data"] as $key => $value) {
                     $logger->trace("Analyse de l'élement : " . $key);
@@ -921,6 +1021,8 @@ $longOpts = array(
 
 $options = getopt($shortOpts, $longOpts);
 
+print_r($options);
+
 // Create logger and set level
 Logger::configure('config.xml');
 $logger = Logger::getRootLogger();
@@ -937,6 +1039,13 @@ try {
     die();
 }
 
+// Store places in database
+places($dbh);
+
+// Store species in database
+species($dbh);
+
+// Store observations in database
 observations($dbh);
 
 $dbh = null;
