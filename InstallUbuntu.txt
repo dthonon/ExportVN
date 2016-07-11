@@ -13,12 +13,14 @@ Procédure d'installation sous Ubuntu 16.04
 4) installer les scripts de téléchargement
    $ git clone https://github.com/dthonon/ExportVN
    
-5) configurer une copie locale des scripts de lancement
+5) configurer le script de lancement
    $ cd ExportVN
-   $ cp ChargePsql.sh ChargePsql_local.sh
-   $ cp ExportJson.sh ExportJson_local.sh
-   puis éditez ces 2 fichiers pour renseigner les valeurs propres à votre site
+   $ ./evn.sh config
+    puis renseigner les valeurs propres à votre site
 
 6) Optionnel : pour formatter (PrettyPrint.sh) les fichiers json
    $ sudo apt install yajl-tools
 
+7) Utilisation
+   $ ./evn.sh download
+   $ ./env.sh store

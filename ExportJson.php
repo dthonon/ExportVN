@@ -512,6 +512,14 @@ $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 $logger->info("Début de l'export");
 //$logger->trace(var_export($options, true));
 
+// Get tokens saved from previous session, to restart
+if (file_exists(getenv('HOME') . '/' . '.evn_ini.json')) {
+	$logger->debug("Lecture du fichier de tokens de session" . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
+    $checkpoint = json_decode(file_get_contents(getenv('HOME') . '/' . '.evn_ini.json'),TRUE);
+} else {
+	$checkpoint = array();
+}
+
 // Get authorization from Biolovision
 try {
 	$logger->trace("Getting oauth\n");
@@ -530,33 +538,33 @@ try {
 	// $logger->trace("Groupe taxonomique = " . $id_taxo);
 // }
 
-// Download and store entities
-$logger->info("Téléchargement et stockage des 'entities'");
-storeEntities($logger, $options, $oauth);
+//// Download and store entities
+//$logger->info("Téléchargement et stockage des 'entities'");
+//storeEntities($logger, $options, $oauth);
 
-// Download and store export organizations
-$logger->info("Téléchargement et stockage des 'export_organizations'");
-storeExport_Orgs($logger, $options, $oauth);
+//// Download and store export organizations
+//$logger->info("Téléchargement et stockage des 'export_organizations'");
+//storeExport_Orgs($logger, $options, $oauth);
 
-// Download and store places
-$logger->info("Téléchargement et stockage des 'places'");
-storePlaces($logger, $options, $oauth);
+//// Download and store places
+//$logger->info("Téléchargement et stockage des 'places'");
+//storePlaces($logger, $options, $oauth);
 
-// Download and store admin units
-$logger->info("Téléchargement et stockage des 'local admin units'");
-storeAdminUnits($logger, $options, $oauth);
+//// Download and store admin units
+//$logger->info("Téléchargement et stockage des 'local admin units'");
+//storeAdminUnits($logger, $options, $oauth);
 
-// Download and store export families
-$logger->info("Téléchargement et stockage des 'families'");
-storeFamilies($logger, $options, $oauth);
+//// Download and store export families
+//$logger->info("Téléchargement et stockage des 'families'");
+//storeFamilies($logger, $options, $oauth);
 
-// Download and store export species
-$logger->info("Téléchargement et stockage des 'species'");
-storeSpecies($logger, $options, $oauth);
+//// Download and store export species
+//$logger->info("Téléchargement et stockage des 'species'");
+//storeSpecies($logger, $options, $oauth);
 
-// Download and store export observations
-$logger->info("Téléchargement et stockage des 'observations'");
-storeObservations($logger, $options, $oauth);
+//// Download and store export observations
+//$logger->info("Téléchargement et stockage des 'observations'");
+//storeObservations($logger, $options, $oauth);
 
 $dbh = null;
 ?>
