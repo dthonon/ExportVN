@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * @license http://www.opensource.org/licenses/mit-license.html MIT License
- * 
+ *
  */
 require ('log4php/Logger.php');
 
@@ -47,19 +47,19 @@ require ('log4php/Logger.php');
  *            oauth acces to biolovision site
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storePlaces($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/places";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
     );
-    
+
     $i = 1;
-    
+
     do {
         // Get data
         $oauth->enableDebug();
@@ -73,15 +73,15 @@ function storePlaces($logger, $options, $oauth)
         $logger->trace($respHead);
         $pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
         $logger->debug(_("Reçu page = ") . $pageNum . _(", clé = |") . rtrim($pageKey[1]) . "|");
-		$data = json_decode($response, true);
+        $data = json_decode($response, true);
         $logger->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
         if (count($data["data"]) == 0) {
             break;
         }
         file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/places_' . $i . '.json', $response);
         $logger->trace(print_r($data["data"][1], true));
-        
-        
+
+
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
@@ -104,17 +104,17 @@ function storePlaces($logger, $options, $oauth)
  *            oauth acces to biolovision site
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storeAdminUnits($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/local_admin_units";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
     );
-    
+
     $i = 1;
     // Get data
     $logger->debug(_("Demande de local_admin_units ") . $i);
@@ -126,7 +126,7 @@ function storeAdminUnits($logger, $options, $oauth)
     $data = json_decode($response, true);
     // $logger->trace(print_r($data["data"], true));
     $logger->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
-    
+
 }
 
 /**
@@ -142,36 +142,36 @@ function storeAdminUnits($logger, $options, $oauth)
  *            oauth acces to biolovision site
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storeEntities($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/entities";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
     );
-    
+
     $i = 1;
     // Get data
     try {
-		$logger->trace(_("Demande de entities"));
-		$oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-		$logger->trace(_("Réception des données"));
-		$response = $oauth->getLastResponse();
-		file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/entities_' . $i . '.json', $response);
-		$data = json_decode($response, true);
-		// $logger->trace(print_r($data["data"], true));
-		$logger->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
-	} catch (\OAuthException $oauthException) {
-		$response = $oauth->getLastResponse();
-		$logger->error(print_r($oauth->getLastResponseInfo(), true));
-		$json_error = json_decode($oauthException->lastResponse, true);
-		$logger->error(_("Erreur de réception : ") . var_export($json_error, true));
-		$logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
-	};
-    
+        $logger->trace(_("Demande de entities"));
+        $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
+        $logger->trace(_("Réception des données"));
+        $response = $oauth->getLastResponse();
+        file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/entities_' . $i . '.json', $response);
+        $data = json_decode($response, true);
+        // $logger->trace(print_r($data["data"], true));
+        $logger->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
+    } catch (\OAuthException $oauthException) {
+        $response = $oauth->getLastResponse();
+        $logger->error(print_r($oauth->getLastResponseInfo(), true));
+        $json_error = json_decode($oauthException->lastResponse, true);
+        $logger->error(_("Erreur de réception : ") . var_export($json_error, true));
+        $logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
+    };
+
 }
 
 /**
@@ -187,17 +187,17 @@ function storeEntities($logger, $options, $oauth)
  *            oauth acces to biolovision site
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storeExport_Orgs($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/export_organizations";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
     );
-    
+
     $i = 1;
     // Get data
     $logger->trace(_("Demande de export_organizations"));
@@ -208,7 +208,7 @@ function storeExport_Orgs($logger, $options, $oauth)
     $data = json_decode($response, true);
     // $logger->trace(print_r($data["data"], true));
     $logger->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
-    
+
 }
 
 /**
@@ -224,12 +224,12 @@ function storeExport_Orgs($logger, $options, $oauth)
  *            oauth acces to biolovision site
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storeFamilies($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/families";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
@@ -256,7 +256,7 @@ function storeFamilies($logger, $options, $oauth)
         }
         file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/families_' . $i . '.json', $response);
         $logger->trace(print_r($data["data"][1], true));
-              
+
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
@@ -278,20 +278,20 @@ function storeFamilies($logger, $options, $oauth)
  * @param void $oauth
  *            oauth acces to biolovision site
  * @return $taxo_lits
-			  list of taxo groups available
+              list of taxo groups available
  * @author Daniel Thonon
- *        
+ *
  */
 function storeTaxoGroups($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/taxo_groups";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
     );
-	
-	$taxo_list = array();
+
+    $taxo_list = array();
     $i = 1;
     do {
         // Get data
@@ -315,15 +315,15 @@ function storeTaxoGroups($logger, $options, $oauth)
         file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/taxo_groups_' . $i . '.json', $response);
 
         foreach ($data["data"] as $key => $value) {
-			// $logger->trace(print_r($data["data"][$key], true));
-			$taxo = $data["data"][$key];
-			$logger->info(_("Groupe taxonomique : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
-			if ($taxo["access_mode"] != "none") {
-				$logger->info(_("Taxon à télécharger"));
-				$taxo_list[] = $taxo["id"];
-			}
-		}
-		
+            // $logger->trace(print_r($data["data"][$key], true));
+            $taxo = $data["data"][$key];
+            $logger->info(_("Groupe taxonomique : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
+            if ($taxo["access_mode"] != "none") {
+                $logger->info(_("Taxon à télécharger"));
+                $taxo_list[] = $taxo["id"];
+            }
+        }
+
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
@@ -331,8 +331,8 @@ function storeTaxoGroups($logger, $options, $oauth)
         );
         $i += 1;
     } while ($i < 10); // Limit to 10 request, to avoid bug infinite loop
-	
-	return $taxo_list;
+
+    return $taxo_list;
 }
 
 /**
@@ -348,12 +348,12 @@ function storeTaxoGroups($logger, $options, $oauth)
  *            oauth acces to biolovision site
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storeSpecies($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/species";
-    
+
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
@@ -380,7 +380,7 @@ function storeSpecies($logger, $options, $oauth)
         }
         file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/species_' . $i . '.json', $response);
         $logger->trace(print_r($data["data"][1], true));
-        
+
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
@@ -405,82 +405,82 @@ function storeSpecies($logger, $options, $oauth)
  *            Database connection
  * @return void
  * @author Daniel Thonon
- *        
+ *
  */
 function storeObservations($logger, $options, $oauth)
 {
     $request_uri = $options['site'] . "api/observations";
-	
-	// First, request list of taxo groups enabled
-	// Note : as side effect, the taxo_group file is created here
-	$taxo_list = storeTaxoGroups($logger, $options, $oauth);
-	
-	$i = 1; // Compteur de demandes
-	
-	// Loop on taxo groups, starting from the end to finish with birds (largest set)
-	foreach (array_reverse($taxo_list) as $id_taxo) {
-		$logger->info(_("Demande des observations du groupe taxonomique = ") . $id_taxo);
-		$params = array(
-			'user_pw' => $options['user_pw'],
-			'user_email' => $options['user_email'],
-			'id_taxo_group' => $id_taxo
-		);
 
-    		
-		$nb_error = 0; // Error counter to stop if to many consecutive errors
-		do {
-			// Get data
-			$oauth->enableDebug();
-			$logger->debug(_("Demande d'observations ") . $i . -(", groupe taxonomique ") . $id_taxo);
-			$logger->trace(_(" => params : ") . print_r($params, TRUE));
-			try {
-				$oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-				// $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
-				$logger->trace(_("Réception des données"));
-				$response = $oauth->getLastResponse();
-				$logger->trace(print_r($oauth->getLastResponseInfo(), true));
-				$respHead = $oauth->getLastResponseHeaders();
-				$logger->trace($respHead);
-				$pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
-				$logger->debug(_("Reçu page = ") . $pageNum . _(", clé = |") . rtrim($pageKey[1]) . "|");
-				$data = json_decode($response, true);
-			
-				$sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
-				$forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
-				$logger->debug(_("Lu ") . $sightings . _(" élements sightings"));
-				$logger->debug(_("Lu ") . $forms . _(" élements forms"));
-				
-				// Empty file => exit
-				if ($sightings + $forms == 0) {
-					break;
-				}
-				file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json', 
-								  $response);
-				
-				$params = array(
-					'user_pw' => $options['user_pw'],
-					'user_email' => $options['user_email'],
-					'id_taxo_group' => $id_taxo,
-					'pagination_key' => rtrim($pageKey[1])
-				);
-				$i += 1;
-				$nb_error = 0; // No error: reset counter
-				
-			} catch (\OAuthException $oauthException) {
-				$nb_error += 1;
-				$response = $oauth->getLastResponse();
-				$json_error = json_decode($oauthException->lastResponse, true);
-				$logger->error(_("Erreur de réception numéro : ") . $nb_error . _(", code : ") . var_export($json_error, true));
-				$logger->error(print_r($oauth->getLastResponseInfo(), true));
-				$logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
-				if ($nb_error > 5) {
-					$logger->fatal(_("Arrêt après 5 erreurs"));
-					break;					
-				}
-				sleep(10); // Wait before next request
-			};
-		} while ($i < 500); // Limit to 500 request, to avoid bug infinite loop
-	}
+    // First, request list of taxo groups enabled
+    // Note : as side effect, the taxo_group file is created here
+    $taxo_list = storeTaxoGroups($logger, $options, $oauth);
+
+    $i = 1; // Compteur de demandes
+
+    // Loop on taxo groups, starting from the end to finish with birds (largest set)
+    foreach (array_reverse($taxo_list) as $id_taxo) {
+        $logger->info(_("Demande des observations du groupe taxonomique = ") . $id_taxo);
+        $params = array(
+            'user_pw' => $options['user_pw'],
+            'user_email' => $options['user_email'],
+            'id_taxo_group' => $id_taxo
+        );
+
+
+        $nb_error = 0; // Error counter to stop if to many consecutive errors
+        do {
+            // Get data
+            $oauth->enableDebug();
+            $logger->debug(_("Demande d'observations ") . $i . -(", groupe taxonomique ") . $id_taxo);
+            $logger->trace(_(" => params : ") . print_r($params, TRUE));
+            try {
+                $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
+                // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
+                $logger->trace(_("Réception des données"));
+                $response = $oauth->getLastResponse();
+                $logger->trace(print_r($oauth->getLastResponseInfo(), true));
+                $respHead = $oauth->getLastResponseHeaders();
+                $logger->trace($respHead);
+                $pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
+                $logger->debug(_("Reçu page = ") . $pageNum . _(", clé = |") . rtrim($pageKey[1]) . "|");
+                $data = json_decode($response, true);
+
+                $sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
+                $forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
+                $logger->debug(_("Lu ") . $sightings . _(" élements sightings"));
+                $logger->debug(_("Lu ") . $forms . _(" élements forms"));
+
+                // Empty file => exit
+                if ($sightings + $forms == 0) {
+                    break;
+                }
+                file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json',
+                                  $response);
+
+                $params = array(
+                    'user_pw' => $options['user_pw'],
+                    'user_email' => $options['user_email'],
+                    'id_taxo_group' => $id_taxo,
+                    'pagination_key' => rtrim($pageKey[1])
+                );
+                $i += 1;
+                $nb_error = 0; // No error: reset counter
+
+            } catch (\OAuthException $oauthException) {
+                $nb_error += 1;
+                $response = $oauth->getLastResponse();
+                $json_error = json_decode($oauthException->lastResponse, true);
+                $logger->error(_("Erreur de réception numéro : ") . $nb_error . _(", code : ") . var_export($json_error, true));
+                $logger->error(print_r($oauth->getLastResponseInfo(), true));
+                $logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
+                if ($nb_error > 5) {
+                    $logger->fatal(_("Arrêt après 5 erreurs"));
+                    break;
+                }
+                sleep(10); // Wait before next request
+            };
+        } while ($i < 500); // Limit to 500 request, to avoid bug infinite loop
+    }
 }
 
 // ///////////////////////// Main ////////////////////////////////////
@@ -497,9 +497,9 @@ $longOpts = array(
     "consumer_key:",    // Required: API key
     "consumer_secret:", // Required: API key
     "site:",            // Required: biolovision site to access
-	"file_store:",      // Required: directory where downloaded json files are stored. Relative to $HOME
+    "file_store:",      // Required: directory where downloaded json files are stored. Relative to $HOME
     "logging::"         // Optional: debugging messages
-) 
+)
 ;
 
 $options = getopt($shortOpts, $longOpts);
@@ -514,20 +514,20 @@ $logger->info(_("Début de l'export"));
 
 // Get tokens saved from previous session, to restart
 if (file_exists(getenv('HOME') . '/.evn_ini.json')) {
-	$logger->debug(_("Lecture du fichier de tokens de session ") . getenv('HOME') . '/.evn_ini.json');
+    $logger->debug(_("Lecture du fichier de tokens de session ") . getenv('HOME') . '/.evn_ini.json');
     $checkpoint = json_decode(file_get_contents(getenv('HOME') . '/.evn_ini.json'),TRUE);
 } else {
-	$checkpoint = array();
+    $checkpoint = array();
 }
 
 // Get authorization from Biolovision
 try {
-	$logger->trace(_("Obtention de oauth"));
-	$oauth = new OAuth($options['consumer_key'], $options['consumer_secret'], OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_URI);
-	// $oauth->enableDebug();
+    $logger->trace(_("Obtention de oauth"));
+    $oauth = new OAuth($options['consumer_key'], $options['consumer_secret'], OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_URI);
+    // $oauth->enableDebug();
 } catch (OAuthException $E) {
-	$logger->error(print_r($E, true));
-	die();
+    $logger->error(print_r($E, true));
+    die();
 }
 
 // Download and store export taxo_groups
@@ -535,7 +535,7 @@ try {
 // $logger->info(_("Téléchargement et stockage des 'taxo_groups'"));
 // $taxo_list = storeTaxoGroups($logger, $options, $oauth);
 // foreach ($taxo_list as $id_taxo) {
-	// $logger->trace(_("Groupe taxonomique = ") . $id_taxo);
+    // $logger->trace(_("Groupe taxonomique = ") . $id_taxo);
 // }
 
 //// Download and store entities

@@ -73,7 +73,7 @@ function typeOfValue($val)
 function ddlNamesTypes($logger, $data)
 {
     // Analyze first element to define DDL types
-    $logger->trace("Analyse de l'élement: " . print_r($data[1], true));
+    $logger->trace(_("Analyse de l'élement : ") . print_r($data[1], true));
     $ddl = array();
     reset($data[1]);
     // Find the types
@@ -110,19 +110,19 @@ function insertRows($logger, $data, $dbh, $table, $ddlNT)
     $nbLines = 0;
     reset($data);
     foreach ($data as $key => $val) {
-        // $logger->trace("Analyse de l'élement pour insertion: " . print_r($val, true));
+        // $logger->trace(_("Analyse de l'élement pour insertion : ") . print_r($val, true));
         $rowKeys = "(";
         $rowVals = "(";
         reset($val);
         foreach ($val as $k => $v) {
             // Check if column already exists in the table
             if (! array_key_exists($k, $ddlNT)) {
-                $logger->debug("Colonne absente de la table : " . $k);
+                $logger->debug(_("Colonne absente de la table : ") . $k);
                 // Creation of the new column, outside of insertion transaction
                 $dbh->commit();
                 $ddlStmt = $k . " " . typeOfValue($v) . ";";
                 $ddlStmt = "ALTER TABLE " . $table . " ADD COLUMN " . $ddlStmt;
-                $logger->debug("Modification de la table " . $ddlStmt);
+                $logger->debug(_("Modification de la table ") . $ddlStmt);
                 $dbh->exec($ddlStmt);
                 $ddlNT[$k] = typeOfValue($v); // Update column list
                 $dbh->beginTransaction();
@@ -148,7 +148,7 @@ function insertRows($logger, $data, $dbh, $table, $ddlNT)
                                                               $inData . "\n" . print_r($dbh->errorInfo(), true)));
     }
     $dbh->commit();
-    $logger->debug($nbLines . " lignes insérées dans " . $table);
+    $logger->debug($nbLines . _(" lignes insérées dans ") . $table);
     return $ddlNT;
 }
 
@@ -171,7 +171,7 @@ function insertRows($logger, $data, $dbh, $table, $ddlNT)
 function dropTable($logger, $dbh, $table)
 {
     // Delete if exists and create table
-    $logger->info("Suppression de la table " . $table);
+    $logger->info(_("Suppression de la table ") . $table);
     $dbh->exec("DROP TABLE IF EXISTS " . $table);
 }
 
@@ -201,7 +201,7 @@ function createTable($logger, $data, $dbh, $table)
     }
     $ddlStmt = substr($ddlStmt, 0, - 1) . ");";
     $ddlStmt = "CREATE TABLE " . $table . $ddlStmt;
-    $logger->info("Création de la table " . $ddlStmt);
+    $logger->info(_("Création de la table ") . $ddlStmt);
     $dbh->exec($ddlStmt);
     return $ddlNT;
 }
@@ -219,13 +219,13 @@ function createTable($logger, $data, $dbh, $table)
 function places($dbh)
 {
     global $logger;
-	global $options;
+    global $options;
     
     $ddlNT = array(); // List of columns, kept across files
     $file_min = 1;    # min file for debug
     $file_max = 1000; # max file for debug
 
-	$logger->info("Chargement des fichiers json de places");
+    $logger->info("Chargement des fichiers json de places");
 
     // First, drop places table
     dropTable($logger, $dbh, "places");
@@ -234,22 +234,22 @@ function places($dbh)
     // Loop on dowloaded files
     for ($fic = $file_min; $fic < $file_max; $fic++) {
         if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json")) {
-            $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
+            $logger->info(_("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
             // Analyse du fichier
             $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
         
             $logger->trace("Début de l'analyse des places");
             $data = json_decode($response, true);
             
-			// Create table on first loop
-			if ($fic == 1) {
-				$ddlNT = createTable($logger, $data["data"], $dbh, "places");
-			}
-			// Insert rows
-			$ddlNT = insertRows($logger, $data["data"], $dbh, "places", $ddlNT);
+            // Create table on first loop
+            if ($fic == 1) {
+                $ddlNT = createTable($logger, $data["data"], $dbh, "places");
+            }
+            // Insert rows
+            $ddlNT = insertRows($logger, $data["data"], $dbh, "places", $ddlNT);
         }
     }
-	
+    
 }
 
 /**
@@ -265,13 +265,13 @@ function places($dbh)
 function species($dbh)
 {
     global $logger;
-	global $options;
+    global $options;
     
     $ddlNT = array(); // List of columns, kept across files
     $file_min = 1;    # min file for debug
     $file_max = 1000; # max file for debug
 
-	$logger->info("Chargement des fichiers json de species");
+    $logger->info("Chargement des fichiers json de species");
 
     // First, drop species table
     dropTable($logger, $dbh, "species");
@@ -280,22 +280,22 @@ function species($dbh)
     // Loop on dowloaded files
     for ($fic = $file_min; $fic < $file_max; $fic++) {
         if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json")) {
-            $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
+            $logger->info(_("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
             // Analyse du fichier
             $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
         
-            $logger->trace("Début de l'analyse des species");
+            $logger->trace(_("Début de l'analyse des species"));
             $data = json_decode($response, true);
             
-			// Create table on first loop
-			if ($fic == 1) {
-				$ddlNT = createTable($logger, $data["data"], $dbh, "species");
-			}
-			// Insert rows
-			$ddlNT = insertRows($logger, $data["data"], $dbh, "species", $ddlNT);
+            // Create table on first loop
+            if ($fic == 1) {
+                $ddlNT = createTable($logger, $data["data"], $dbh, "species");
+            }
+            // Insert rows
+            $ddlNT = insertRows($logger, $data["data"], $dbh, "species", $ddlNT);
         }
     }
-	
+    
 }
 
 /**
@@ -460,7 +460,7 @@ function bExtendedInfoMortality($data, &$obs, $suffix)
                 $obs[$suffix . "poison"] = $value;
                 break;
           default:
-                $logger->warn("    Elément extended_info_mortality inconnu: " . $key);
+                $logger->warn(_("    Elément extended_info_mortality inconnu : ") . $key);
         }
     }
 }
@@ -511,7 +511,7 @@ function bExtendedInfoColony($data, &$obs, $suffix)
                 $obs[$suffix . "couples"] = $value;
                 break;
           default:
-                $logger->warn("    Elément extended_info_colony inconnu: " . $key);
+                $logger->warn(_("    Elément extended_info_colony inconnu : ") . $key);
         }
     }
 }
@@ -596,7 +596,7 @@ function bExtendedInfoColonyExtended($data, &$obs, $suffix)
                 $colony_extended = $colony_extended . ",nb_construction_nests=" . $value;
                 break;
           default:
-                $logger->warn("    Elément extended_info_colony_extended inconnu: " . $key);
+                $logger->warn(_("    Elément extended_info_colony_extended inconnu : ") . $key);
         }
     }
     return $colony_extended . ")";
@@ -629,7 +629,7 @@ function bExtendedInfos($data, &$obs, $suffix)
                 $obs[$suffix . "colony_extended_list"] = $colony_extended;
                 break;
             default:
-                $logger->warn("    Elément extended_infos inconnu: " . $key);
+                $logger->warn(_("    Elément extended_infos inconnu : ") . $key);
         }
         
     }
@@ -682,7 +682,7 @@ function bDetail($data, &$obs, $suffix)
                 $detail = $detail. ",distance=" . bSousDetail($value, $obs, $suffix . $key . "_");
                 break;
             default:
-                $logger->warn("  Elément detail inconnu: " . $key . " => " . print_r($value, TRUE));
+                $logger->warn(_("  Elément detail inconnu : ") . $key . " => " . print_r($value, TRUE));
         }
     }
     return $detail . ")";
@@ -831,7 +831,7 @@ function bObserver($data, &$obs)
                 $logger->trace("  id_universal non implemented");
                 break;
             default:
-                $logger->warn("  Elément observer inconnu: " . $key . " => " . print_r($value, TRUE));
+                $logger->warn(_("  Elément observer inconnu : ") . $key . " => " . print_r($value, TRUE));
         }
     }
 }
@@ -868,7 +868,7 @@ function bSighting($data, &$obs)
                 bObservers($value, $obs);
                 break;
             default:
-                $logger->warn("Elément sighting inconnu: " . $key);
+                $logger->warn(_("Elément sighting inconnu : ") . $key);
         }
     }
     $logger->trace(print_r($obs, TRUE));
@@ -885,14 +885,14 @@ function bSightings($data, $dbh, &$obs_dropped, $ddlNT)
     $obs_array = array(); // Store observations per row
     reset($data);
     
-    $logger->trace("Analyse d'une observation");
+    $logger->trace(_("Analyse d'une observation"));
     foreach ($data as $key => $value) {
         $nbRow = $nbRow + 1;
         if ($nbRow < $row_min) {
             continue;
         }
-        $logger->trace("Elément sightings numéro: " . $nbRow);
-        // $logger->debug("Elements: " . print_r(array_keys($value, TRUE)));
+        $logger->trace(_("Elément sightings numéro : ") . $nbRow);
+        // $logger->debug(_("Elements : ") . print_r(array_keys($value, TRUE)));
         $obs = array();
         bSighting($value, $obs);
         $obs_array[] = $obs;
@@ -902,14 +902,14 @@ function bSightings($data, $dbh, &$obs_dropped, $ddlNT)
     }
 
     // Create table on first pass and insert data, if sightings not empty
-	if ($nbRow > 0) {
-		if ($obs_dropped) {
-			$ddlNT = createTable($logger, $obs_array, $dbh, "observations");
-			$obs_dropped = FALSE;
-		}
-		// Insert data
-		$ddlNT = insertRows($logger, $obs_array, $dbh, "observations", $ddlNT);		
-	}
+    if ($nbRow > 0) {
+        if ($obs_dropped) {
+            $ddlNT = createTable($logger, $obs_array, $dbh, "observations");
+            $obs_dropped = FALSE;
+        }
+        // Insert data
+        $ddlNT = insertRows($logger, $obs_array, $dbh, "observations", $ddlNT);     
+    }
     
    return($ddlNT);
 }
@@ -920,17 +920,17 @@ function bForms($data, $dbh, &$obs_dropped, $ddlNT)
     $nbRow = 0;
     reset($data);
     
-    $logger->trace("Analyse d'un formulaire");
-	foreach ($data as $key => $value) {
+    $logger->trace(_("Analyse d'un formulaire"));
+    foreach ($data as $key => $value) {
         $nbRow = $nbRow + 1;
-        $logger->trace("Elément forms numéro: " . $nbRow);
+        $logger->trace(_("Elément forms numéro : ") . $nbRow);
         foreach ($value as $keyS => $valueS) {
             switch ($keyS) {
                 case "sightings":
                     $ddlNT = bSightings($valueS, $dbh, $obs_dropped, $ddlNT);
                     break;
                 default:
-                    $logger->trace("Element forms non traité : " . $keyS);
+                    $logger->trace(_("Element forms non traité : ") . $keyS);
             }
         }
       }
@@ -951,14 +951,14 @@ function bForms($data, $dbh, &$obs_dropped, $ddlNT)
 function observations($dbh)
 {
     global $logger;
-	global $options;
+    global $options;
     
     $ddlNT = array(); // List of columns, kept across files
 
     $file_min = 1;    # min file for debug
     $file_max = 1000; # max file for debug
 
-	$logger->info("Chargement des fichiers json d'observations");
+    $logger->info(_("Chargement des fichiers json d'observations"));
 
     // First, drop observations table
     dropTable($logger, $dbh, "observations");
@@ -967,11 +967,11 @@ function observations($dbh)
     // Loop on dowloaded files
     for ($fic = $file_min; $fic < $file_max; $fic++) {
         if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json")) {
-            $logger->info("Lecture du fichier " . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
+            $logger->info(_("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
             // Analyse du fichier
             $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json");
         
-            $logger->trace("Début de l'analyse des observations");
+            $logger->trace(_("Début de l'analyse des observations"));
             $data = json_decode($response, true);
             
             $sightings = (is_array($data) && (array_key_exists("sightings", $data["data"]))) ? count($data["data"]["sightings"]) : 0;
@@ -979,13 +979,13 @@ function observations($dbh)
             
             // Empty file => exit
             if ($sightings + $forms == 0) {
-                $logger->warn("Fichier de données vide");
+                $logger->warn(_("Fichier de données vide"));
             } else {  
-                $logger->debug("Chargement de " . $sightings . " élements sightings");
-                $logger->debug("Chargement de " . $forms . " élements forms");
+                $logger->debug(_("Chargement de ") . $sightings . " élements sightings");
+                $logger->debug(_("Chargement de ") . $forms . " élements forms");
                 reset($data);
                 foreach ($data["data"] as $key => $value) {
-                    $logger->trace("Analyse de l'élement : " . $key);
+                    $logger->trace(_("Analyse de l'élement : ") . $key);
                     switch ($key) {
                         case "sightings":
                             $ddlNT = bSightings($value, $dbh, $obs_dropped, $ddlNT);
@@ -994,10 +994,10 @@ function observations($dbh)
                             $ddlNT = bForms($value, $dbh, $obs_dropped, $ddlNT);
                             break;
                         default:
-                            $logger->warn("Element racine inconnu: " . $key);
+                            $logger->warn(_("Element racine inconnu: ") . $key);
                         }
                 }
-                $logger->info("Fin de l'analyse d'un fichier d'observations");
+                $logger->info(_("Fin de l'analyse d'un fichier d'observations"));
             }
 
         }
@@ -1014,7 +1014,7 @@ $longOpts = array(
     "db_name:",         // Required: database name
     "db_user:",         // Required: database role
     "db_pw:",           // Required: database role password
-	"file_store:",      // Required: directory where downloaded json files are stored. Relative to $HOME
+    "file_store:",      // Required: directory where downloaded json files are stored. Relative to $HOME
     "logging::"         // Optional: debugging messages
 ) 
 ;
