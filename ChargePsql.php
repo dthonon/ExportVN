@@ -144,8 +144,12 @@ function insertRows($logger, $data, $dbh, $table, $ddlNT)
         $rowVals = substr($rowVals, 0, - 1) . ")";
         $inData = "INSERT INTO " . $table . $rowKeys . " VALUES " . $rowVals;
         // $logger->trace($inData);
-        $nbLines += $dbh->exec($inData) or die($logger->fatal("Insertion incorrecte : " .
-                                                              $inData . "\n" . print_r($dbh->errorInfo(), true)));
+        $nbLines += $dbh->exec($inData) or die(
+            $logger->fatal(
+                "Insertion incorrecte : " .
+                $inData . "\n" . print_r($dbh->errorInfo(), true)
+            )
+        );
     }
     $dbh->commit();
     $logger->debug($nbLines . _(" lignes insérées dans ") . $table);
@@ -222,21 +226,25 @@ function places($dbh)
     global $options;
 
     $ddlNT = array(); // List of columns, kept across files
-    $file_min = 1;    # min file for debug
-    $file_max = 1000; # max file for debug
+    $fileMin = 1;    # min file for debug
+    $fileMax = 1000; # max file for debug
 
     $logger->info("Chargement des fichiers json de places");
 
     // First, drop places table
     dropTable($logger, $dbh, "places");
-    $obs_dropped = true;
+    $obsDropped = true;
 
     // Loop on dowloaded files
-    for ($fic = $file_min; $fic < $file_max; $fic++) {
-        if (file_exists(getenv('HOME') . '/' . $options['file_store'] .
-                        "/places_" . $fic . ".json")) {
-            $logger->info(_("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] .
-                            "/places_" . $fic . ".json");
+    for ($fic = $fileMin; $fic < $fileMax; $fic++) {
+        if (file_exists(
+            getenv('HOME') . '/' . $options['file_store'] .
+            "/places_" . $fic . ".json"
+        )) {
+            $logger->info(
+                _("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] .
+                "/places_" . $fic . ".json"
+            );
             // Analyse du fichier
             $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
 
@@ -269,21 +277,25 @@ function species($dbh)
     global $options;
 
     $ddlNT = array(); // List of columns, kept across files
-    $file_min = 1;    # min file for debug
-    $file_max = 1000; # max file for debug
+    $fileMin = 1;    # min file for debug
+    $fileMax = 1000; # max file for debug
 
     $logger->info("Chargement des fichiers json de species");
 
     // First, drop species table
     dropTable($logger, $dbh, "species");
-    $obs_dropped = true;
+    $obsDropped = true;
 
     // Loop on dowloaded files
-    for ($fic = $file_min; $fic < $file_max; $fic++) {
-        if (file_exists(getenv('HOME') . '/' . $options['file_store'] .
-                               "/species_" . $fic . ".json")) {
-            $logger->info(_("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] .
-                            "/species_" . $fic . ".json");
+    for ($fic = $fileMin; $fic < $fileMax; $fic++) {
+        if (file_exists(
+            getenv('HOME') . '/' . $options['file_store'] .
+            "/species_" . $fic . ".json"
+        )) {
+            $logger->info(
+                _("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] .
+                "/species_" . $fic . ".json"
+            );
             // Analyse du fichier
             $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
 
@@ -479,11 +491,11 @@ function bExtendedInfoBeardedVultures($data, &$obs, $suffix)
 {
     global $logger;
     reset($data);
-    $bearded_vulture = "";
+    $beardedVulture = "";
     foreach ($data as $key => $value) {
-        $bearded_vulture = $bearded_vulture . bExtendedInfoBeardedVulture($value, $obs, $suffix . $key . "_");
+        $beardedVulture = $beardedVulture . bExtendedInfoBeardedVulture($value, $obs, $suffix . $key . "_");
     }
-    $obs[$suffix . "data"] = $bearded_vulture;
+    $obs[$suffix . "data"] = $beardedVulture;
 }
 
 function bExtendedInfoColony($data, &$obs, $suffix)
@@ -522,93 +534,93 @@ function bExtendedInfoColonyExtended($data, &$obs, $suffix)
 {
     global $logger;
     reset($data);
-    $colony_extended = "(";
+    $colonyExtended = "(";
     foreach ($data as $key => $value) {
         switch ($key) {
             case "couples":
                 $logger->trace("    " . $suffix . "couples => " . $value);
-                $colony_extended = $colony_extended . ",couples=" . $value;
+                $colonyExtended = $colonyExtended . ",couples=" . $value;
                 break;
             case "nests":
                 $logger->trace("    " . $suffix . "nests => " . $value);
-                $colony_extended = $colony_extended . ",nests" . $value;
+                $colonyExtended = $colonyExtended . ",nests" . $value;
                 break;
             case "nests_is_min":
                 $logger->trace("    " . $suffix . "nests_is_min => " . $value);
-                $colony_extended = $colony_extended . ",nests_is_min" . $value;
+                $colonyExtended = $colonyExtended . ",nests_is_min" . $value;
                 break;
             case "nests_is_max":
                 $logger->trace("    " . $suffix . "nests_is_max => " . $value);
-                $colony_extended = $colony_extended . ",nests_is_max" . $value;
+                $colonyExtended = $colonyExtended . ",nests_is_max" . $value;
                 break;
             case "occupied_nests":
                 $logger->trace("    " . $suffix . "occupied_nests => " . $value);
-                $colony_extended = $colony_extended . ",occupied_nests" . $value;
+                $colonyExtended = $colonyExtended . ",occupied_nests" . $value;
                 break;
             case "nb_natural_nests":
                 $logger->trace("    " . $suffix . "nb_natural_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_natural_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_natural_nests=" . $value;
                 break;
             case "nb_natural_nests_is_min":
                 $logger->trace("    " . $suffix . "nb_natural_nests_is_min => " . $value);
-                $colony_extended = $colony_extended . ",nb_natural_nests_is_min" . $value;
+                $colonyExtended = $colonyExtended . ",nb_natural_nests_is_min" . $value;
                 break;
             case "nb_natural_nests_is_max":
                 $logger->trace("    " . $suffix . "nb_natural_nests_is_max => " . $value);
-                $colony_extended = $colony_extended . ",nb_natural_nests_is_max" . $value;
+                $colonyExtended = $colonyExtended . ",nb_natural_nests_is_max" . $value;
                 break;
             case "nb_natural_occup_nests":
                 $logger->trace("    " . $suffix . "nb_natural_occup_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_natural_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_natural_nests=" . $value;
                 break;
             case "nb_natural_other_species_nests":
                 $logger->trace("    " . $suffix . "nb_natural_other_species_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_natural_other_species_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_natural_other_species_nests=" . $value;
                 break;
             case "nb_natural_destructed_nests":
                 $logger->trace("    " . $suffix . "nb_natural_destructed_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_natural_destructed_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_natural_destructed_nests=" . $value;
                 break;
             case "nb_artificial_nests":
                 $logger->trace("    " . $suffix . "nb_artificial_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_artificial_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_artificial_nests=" . $value;
                 break;
             case "nb_artificial_nests_is_min":
                 $logger->trace("    " . $suffix . "nb_artificial_nests_is_min => " . $value);
-                $colony_extended = $colony_extended . ",nb_artificial_nests_is_min=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_artificial_nests_is_min=" . $value;
                 break;
             case "nb_artificial_nests_is_max":
                 $logger->trace("    " . $suffix . "nb_artificial_nests_is_max => " . $value);
-                $colony_extended = $colony_extended . ",nb_artificial_nests_is_max=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_artificial_nests_is_max=" . $value;
                 break;
             case "nb_artificial_occup_nests":
                 $logger->trace("    " . $suffix . "nb_artificial_occup_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_artificial_occup_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_artificial_occup_nests=" . $value;
                 break;
             case "nb_artificial_other_species_nests":
                 $logger->trace("    " . $suffix . "nb_artificial_other_species_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_artificial_other_species_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_artificial_other_species_nests=" . $value;
                 break;
             case "nb_artificial_destructed_nests":
                 $logger->trace("    " . $suffix . "nb_artificial_destructed_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_artificial_destructed_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_artificial_destructed_nests=" . $value;
                 break;
             case "nb_construction_nests":
                 $logger->trace("    " . $suffix . "nb_construction_nests => " . $value);
-                $colony_extended = $colony_extended . ",nb_construction_nests=" . $value;
+                $colonyExtended = $colonyExtended . ",nb_construction_nests=" . $value;
                 break;
             default:
                 $logger->warn(_("    Elément extended_info_colony_extended inconnu : ") . $key);
         }
     }
-    return $colony_extended . ")";
+    return $colonyExtended . ")";
 }
 
 function bExtendedInfos($data, &$obs, $suffix)
 {
     global $logger;
     reset($data);
-    $colony_extended = $suffix . ":";
+    $colonyExtended = $suffix . ":";
     foreach ($data as $key => $value) {
         switch ($key) {
             case "mortality":
@@ -626,9 +638,9 @@ function bExtendedInfos($data, &$obs, $suffix)
             case "colony_extended":
                 $logger->trace("    " . $suffix . "colony_extended => ");
                 foreach ($data as $key => $value) {
-                    $colony_extended = $colony_extended . bExtendedInfoColonyExtended($value, $obs, "");
+                    $colonyExtended = $colonyExtended . bExtendedInfoColonyExtended($value, $obs, "");
                 }
-                $obs[$suffix . "colony_extended_list"] = $colony_extended;
+                $obs[$suffix . "colony_extended_list"] = $colonyExtended;
                 break;
             default:
                 $logger->warn(_("    Elément extended_infos inconnu : ") . $key);
@@ -875,46 +887,46 @@ function bSighting($data, &$obs)
     $logger->trace(print_r($obs, true));
 }
 
-function bSightings($data, $dbh, &$obs_dropped, $ddlNT)
+function bSightings($data, $dbh, &$obsDropped, $ddlNT)
 {
     global $logger;
-    $row_min = 0; # starting record for debug
-    $row_max = 1000000000; # ending record for debug
+    $rowMin = 0; // starting record for debug
+    $rowMax = 1000000000; // ending record for debug
     $nbRow = 0;
 
-    $obs_array = array(); // Store observations per row
+    $obsArray = array(); // Store observations per row
     reset($data);
 
     $logger->trace(_("Analyse d'une observation"));
     foreach ($data as $key => $value) {
         $nbRow = $nbRow + 1;
-        if ($nbRow < $row_min) {
+        if ($nbRow < $rowMin) {
             continue;
         }
         $logger->trace(_("Elément sightings numéro : ") . $nbRow);
         // $logger->debug(_("Elements : ") . print_r(array_keys($value, TRUE)));
         $obs = array();
         bSighting($value, $obs);
-        $obs_array[] = $obs;
-        if ($nbRow > $row_max) {
+        $obsArray[] = $obs;
+        if ($nbRow > $rowMax) {
             break;
         }
     }
 
     // Create table on first pass and insert data, if sightings not empty
     if ($nbRow > 0) {
-        if ($obs_dropped) {
-            $ddlNT = createTable($logger, $obs_array, $dbh, "observations");
-            $obs_dropped = false;
+        if ($obsDropped) {
+            $ddlNT = createTable($logger, $obsArray, $dbh, "observations");
+            $obsDropped = false;
         }
         // Insert data
-        $ddlNT = insertRows($logger, $obs_array, $dbh, "observations", $ddlNT);
+        $ddlNT = insertRows($logger, $obsArray, $dbh, "observations", $ddlNT);
     }
 
     return($ddlNT);
 }
 
-function bForms($data, $dbh, &$obs_dropped, $ddlNT)
+function bForms($data, $dbh, &$obsDropped, $ddlNT)
 {
     global $logger;
     $nbRow = 0;
@@ -927,7 +939,7 @@ function bForms($data, $dbh, &$obs_dropped, $ddlNT)
         foreach ($value as $keyS => $valueS) {
             switch ($keyS) {
                 case "sightings":
-                    $ddlNT = bSightings($valueS, $dbh, $obs_dropped, $ddlNT);
+                    $ddlNT = bSightings($valueS, $dbh, $obsDropped, $ddlNT);
                     break;
                 default:
                     $logger->trace(_("Element forms non traité : ") . $keyS);
@@ -955,23 +967,27 @@ function observations($dbh)
 
     $ddlNT = array(); // List of columns, kept across files
 
-    $file_min = 1;    # min file for debug
-    $file_max = 1000; # max file for debug
+    $fileMin = 1;    // min file for debug
+    $fileMax = 1000; // max file for debug
 
     $logger->info(_("Chargement des fichiers json d'observations"));
 
     // First, drop observations table
     dropTable($logger, $dbh, "observations");
-    $obs_dropped = true;
+    $obsDropped = true;
 
     // Loop on dowloaded files
-    for ($fic = $file_min; $fic < $file_max; $fic++) {
+    for ($fic = $fileMin; $fic < $fileMax; $fic++) {
         if (file_exists(getenv('HOME') . '/' . $options['file_store'] . "/observations_" . $fic . ".json")) {
-            $logger->info(_("Lecture du fichier ") . getenv('HOME') . '/' .
-                            $options['file_store'] . "/observations_" . $fic . ".json");
+            $logger->info(
+                _("Lecture du fichier ") . getenv('HOME') . '/' .
+                $options['file_store'] . "/observations_" . $fic . ".json"
+            );
             // Analyse du fichier
-            $response = file_get_contents(getenv('HOME') . '/' .
-                                          $options['file_store'] . "/observations_" . $fic . ".json");
+            $response = file_get_contents(
+                getenv('HOME') . '/' .
+                $options['file_store'] . "/observations_" . $fic . ".json"
+            );
 
             $logger->trace(_("Début de l'analyse des observations"));
             $data = json_decode($response, true);
@@ -994,10 +1010,10 @@ function observations($dbh)
                     $logger->trace(_("Analyse de l'élement : ") . $key);
                     switch ($key) {
                         case "sightings":
-                            $ddlNT = bSightings($value, $dbh, $obs_dropped, $ddlNT);
+                            $ddlNT = bSightings($value, $dbh, $obsDropped, $ddlNT);
                             break;
                         case "forms":
-                            $ddlNT = bForms($value, $dbh, $obs_dropped, $ddlNT);
+                            $ddlNT = bForms($value, $dbh, $obsDropped, $ddlNT);
                             break;
                         default:
                             $logger->warn(_("Element racine inconnu: ") . $key);
@@ -1026,8 +1042,6 @@ $longOpts = array(
 
 $options = getopt($shortOpts, $longOpts);
 
-print_r($options);
-
 // Create logger and set level
 Logger::configure('config.xml');
 $logger = Logger::getRootLogger();
@@ -1038,10 +1052,12 @@ $logger->info("Début de l'import");
 
 // Open database
 try {
-    $dbh = new PDO("pgsql:dbname=" . $options['db_name'] .
-                   ";user=" . $options['db_user'] .
-                   ";password=" . $options['db_pw'] .
-                   ";host=localhost");
+    $dbh = new PDO(
+        'pgsql:dbname=' . $options['db_name']
+        . ';user=' . $options['db_user']
+        . ';password=' . $options['db_pw']
+        . ';host=localhost'
+    );
 } catch (PDOException $e) {
     $logger->error("Erreur !: " . $e->getMessage());
     die();

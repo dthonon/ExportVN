@@ -32,7 +32,7 @@
  * @license http://www.opensource.org/licenses/mit-license.html MIT License
  *
  */
-require ('log4php/Logger.php');
+require('log4php/Logger.php');
 
 /**
  * Download and store places
@@ -51,7 +51,7 @@ require ('log4php/Logger.php');
  */
 function storePlaces($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/places";
+    $requestURI = $options['site'] . "api/places";
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -64,8 +64,8 @@ function storePlaces($logger, $options, $oauth)
         // Get data
         $oauth->enableDebug();
         $logger->debug(_("Demande de places ") . $i);
-        $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-        $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+        $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace(_("Réception des données"));
         $response = $oauth->getLastResponse();
         $logger->trace(print_r($oauth->getLastResponseInfo(), true));
@@ -108,7 +108,7 @@ function storePlaces($logger, $options, $oauth)
  */
 function storeAdminUnits($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/local_admin_units";
+    $requestURI = $options['site'] . "api/local_admin_units";
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -119,7 +119,7 @@ function storeAdminUnits($logger, $options, $oauth)
     // Get data
     $logger->debug(_("Demande de local_admin_units ") . $i);
     $logger->trace(" => params:" . print_r($params, TRUE));
-    $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
+    $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
     $logger->trace(_("Réception des données"));
     $response = $oauth->getLastResponse();
     file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/local_admin_units_' . $i . '.json', $response);
@@ -146,7 +146,7 @@ function storeAdminUnits($logger, $options, $oauth)
  */
 function storeEntities($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/entities";
+    $requestURI = $options['site'] . "api/entities";
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -157,7 +157,7 @@ function storeEntities($logger, $options, $oauth)
     // Get data
     try {
         $logger->trace(_("Demande de entities"));
-        $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
         $logger->trace(_("Réception des données"));
         $response = $oauth->getLastResponse();
         file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/entities_' . $i . '.json', $response);
@@ -167,8 +167,8 @@ function storeEntities($logger, $options, $oauth)
     } catch (\OAuthException $oauthException) {
         $response = $oauth->getLastResponse();
         $logger->error(print_r($oauth->getLastResponseInfo(), true));
-        $json_error = json_decode($oauthException->lastResponse, true);
-        $logger->error(_("Erreur de réception : ") . var_export($json_error, true));
+        $jsonError = json_decode($oauthException->lastResponse, true);
+        $logger->error(_("Erreur de réception : ") . var_export($jsonError, true));
         $logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
     };
 
@@ -191,7 +191,7 @@ function storeEntities($logger, $options, $oauth)
  */
 function storeExport_Orgs($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/export_organizations";
+    $requestURI = $options['site'] . "api/export_organizations";
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -201,7 +201,7 @@ function storeExport_Orgs($logger, $options, $oauth)
     $i = 1;
     // Get data
     $logger->trace(_("Demande de export_organizations"));
-    $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
+    $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
     $logger->trace(_("Réception des données"));
     $response = $oauth->getLastResponse();
     file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/export_organizations_' . $i . '.json', $response);
@@ -228,7 +228,7 @@ function storeExport_Orgs($logger, $options, $oauth)
  */
 function storeFamilies($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/families";
+    $requestURI = $options['site'] . "api/families";
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -240,8 +240,8 @@ function storeFamilies($logger, $options, $oauth)
         $oauth->enableDebug();
         $logger->debug(_("Demande de families ") . $i);
         $logger->trace(" => params:" . print_r($params, TRUE));
-        $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace(_("Réception des données"));
         $response = $oauth->getLastResponse();
         // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
@@ -284,22 +284,22 @@ function storeFamilies($logger, $options, $oauth)
  */
 function storeTaxoGroups($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/taxo_groups";
+    $requestURI = $options['site'] . "api/taxo_groups";
 
     $params = array(
         'user_pw' => $options['user_pw'],
         'user_email' => $options['user_email']
     );
 
-    $taxo_list = array();
+    $taxoList = array();
     $i = 1;
     do {
         // Get data
         $oauth->enableDebug();
         $logger->debug(_("Demande de taxo_groups ") . $i);
         $logger->trace(_(" => params:") . print_r($params, TRUE));
-        $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace("Réception des données");
         $response = $oauth->getLastResponse();
         // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
@@ -320,7 +320,7 @@ function storeTaxoGroups($logger, $options, $oauth)
             $logger->info(_("Groupe taxonomique : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
             if ($taxo["access_mode"] != "none") {
                 $logger->info(_("Taxon à télécharger"));
-                $taxo_list[] = $taxo["id"];
+                $taxoList[] = $taxo["id"];
             }
         }
 
@@ -332,7 +332,7 @@ function storeTaxoGroups($logger, $options, $oauth)
         $i += 1;
     } while ($i < 10); // Limit to 10 request, to avoid bug infinite loop
 
-    return $taxo_list;
+    return $taxoList;
 }
 
 /**
@@ -352,7 +352,7 @@ function storeTaxoGroups($logger, $options, $oauth)
  */
 function storeSpecies($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/species";
+    $requestURI = $options['site'] . "api/species";
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -364,8 +364,8 @@ function storeSpecies($logger, $options, $oauth)
         $oauth->enableDebug();
         $logger->debug(_("Demande de species ") . $i);
         $logger->trace(_(" => params : ") . print_r($params, TRUE));
-        $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace(_("Réception des données"));
         $response = $oauth->getLastResponse();
         // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
@@ -409,33 +409,33 @@ function storeSpecies($logger, $options, $oauth)
  */
 function storeObservations($logger, $options, $oauth)
 {
-    $request_uri = $options['site'] . "api/observations";
+    $requestURI = $options['site'] . "api/observations";
 
     // First, request list of taxo groups enabled
     // Note : as side effect, the taxo_group file is created here
-    $taxo_list = storeTaxoGroups($logger, $options, $oauth);
+    $taxoList = storeTaxoGroups($logger, $options, $oauth);
 
     $i = 1; // Compteur de demandes
 
     // Loop on taxo groups, starting from the end to finish with birds (largest set)
-    foreach (array_reverse($taxo_list) as $id_taxo) {
-        $logger->info(_("Demande des observations du groupe taxonomique = ") . $id_taxo);
+    foreach (array_reverse($taxoList) as $idTaxo) {
+        $logger->info(_("Demande des observations du groupe taxonomique = ") . $idTaxo);
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
-            'id_taxo_group' => $id_taxo
+            'idTaxo_group' => $idTaxo
         );
 
 
-        $nb_error = 0; // Error counter to stop if to many consecutive errors
+        $nbError = 0; // Error counter to stop if to many consecutive errors
         do {
             // Get data
             $oauth->enableDebug();
-            $logger->debug(_("Demande d'observations ") . $i . -(", groupe taxonomique ") . $id_taxo);
+            $logger->debug(_("Demande d'observations ") . $i . -(", groupe taxonomique ") . $idTaxo);
             $logger->trace(_(" => params : ") . print_r($params, TRUE));
             try {
-                $oauth->fetch($request_uri, $params, OAUTH_HTTP_METHOD_GET);
-                // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $request_uri));
+                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+                // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
                 $logger->trace(_("Réception des données"));
                 $response = $oauth->getLastResponse();
                 $logger->trace(print_r($oauth->getLastResponseInfo(), true));
@@ -454,26 +454,28 @@ function storeObservations($logger, $options, $oauth)
                 if ($sightings + $forms == 0) {
                     break;
                 }
-                file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json',
-                                  $response);
+                file_put_contents(
+                    getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json',
+                    $response
+                );
 
                 $params = array(
                     'user_pw' => $options['user_pw'],
                     'user_email' => $options['user_email'],
-                    'id_taxo_group' => $id_taxo,
+                    'idTaxo_group' => $idTaxo,
                     'pagination_key' => rtrim($pageKey[1])
                 );
                 $i += 1;
-                $nb_error = 0; // No error: reset counter
+                $nbError = 0; // No error: reset counter
 
             } catch (\OAuthException $oauthException) {
-                $nb_error += 1;
+                $nbError += 1;
                 $response = $oauth->getLastResponse();
-                $json_error = json_decode($oauthException->lastResponse, true);
-                $logger->error(_("Erreur de réception numéro : ") . $nb_error . _(", code : ") . var_export($json_error, true));
+                $jsonError = json_decode($oauthException->lastResponse, true);
+                $logger->error(_("Erreur de réception numéro : ") . $nbError . _(", code : ") . var_export($jsonError, true));
                 $logger->error(print_r($oauth->getLastResponseInfo(), true));
                 $logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
-                if ($nb_error > 5) {
+                if ($nbError > 5) {
                     $logger->fatal(_("Arrêt après 5 erreurs"));
                     break;
                 }
@@ -515,7 +517,7 @@ $logger->info(_("Début de l'export"));
 // Get tokens saved from previous session, to restart
 if (file_exists(getenv('HOME') . '/.evn_ini.json')) {
     $logger->debug(_("Lecture du fichier de tokens de session ") . getenv('HOME') . '/.evn_ini.json');
-    $checkpoint = json_decode(file_get_contents(getenv('HOME') . '/.evn_ini.json'),TRUE);
+    $checkpoint = json_decode(file_get_contents(getenv('HOME') . '/.evn_ini.json'), TRUE);
 } else {
     $checkpoint = array();
 }
@@ -525,17 +527,17 @@ try {
     $logger->trace(_("Obtention de oauth"));
     $oauth = new OAuth($options['consumer_key'], $options['consumer_secret'], OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_URI);
     // $oauth->enableDebug();
-} catch (OAuthException $E) {
-    $logger->error(print_r($E, true));
+} catch (OAuthException $e) {
+    $logger->error(print_r($e, true));
     die();
 }
 
 // Download and store export taxo_groups
 // Note : also called by storeObservations, so no need to uncomment
 // $logger->info(_("Téléchargement et stockage des 'taxo_groups'"));
-// $taxo_list = storeTaxoGroups($logger, $options, $oauth);
-// foreach ($taxo_list as $id_taxo) {
-    // $logger->trace(_("Groupe taxonomique = ") . $id_taxo);
+// $taxoList = storeTaxoGroups($logger, $options, $oauth);
+// foreach ($taxoList as $idTaxo) {
+    // $logger->trace(_("Groupe taxonomique = ") . $idTaxo);
 // }
 
 //// Download and store entities
@@ -567,4 +569,3 @@ storePlaces($logger, $options, $oauth, $checkpoint);
 //storeObservations($logger, $options, $oauth);
 
 $dbh = null;
-?>
