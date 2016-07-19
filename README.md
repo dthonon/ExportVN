@@ -1,6 +1,6 @@
 # ExportVN
-Export from VisioNature and losd in local postgres database
+Export from VisioNature and load in local postgres database
 
-EN: Customize .sh files with your own credentials and setting
+EN: Refer to InstallCentOS.txt or InstallUbuntu.txt for more details
 
-FR: Configurez les fichiers .sh avec vos propres comptes et paramètres
+FR: Consultez InstallCentOS.txt ou InstallUbuntu.txt pour plus de détails
