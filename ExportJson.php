@@ -317,9 +317,9 @@ function storeTaxoGroups($logger, $options, $oauth)
         foreach ($data["data"] as $key => $value) {
             // $logger->trace(print_r($data["data"][$key], true));
             $taxo = $data["data"][$key];
-            $logger->info(_("Groupe taxonomique : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
+            $logger->trace(_("Groupe taxonomique : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
             if ($taxo["access_mode"] != "none") {
-                $logger->info(_("Taxon à télécharger"));
+                $logger->info(_("Taxon à télécharger : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
                 $taxoList[] = $taxo["id"];
             }
         }
@@ -419,19 +419,20 @@ function storeObservations($logger, $options, $oauth)
 
     // Loop on taxo groups, starting from the end to finish with birds (largest set)
     foreach (array_reverse($taxoList) as $idTaxo) {
+        // $idTaxo = 22;
         $logger->info(_("Demande des observations du groupe taxonomique = ") . $idTaxo);
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
-            'idTaxo_group' => $idTaxo
+            'id_taxo_group' => $idTaxo
         );
-
-
+ 
         $nbError = 0; // Error counter to stop if to many consecutive errors
         do {
             // Get data
+            $logger->trace(_(" => params:") . print_r($params, TRUE));
             $oauth->enableDebug();
-            $logger->debug(_("Demande d'observations ") . $i . -(", groupe taxonomique ") . $idTaxo);
+            $logger->debug(_("Demande d'observations ") . $i . _(", groupe taxonomique ") . $idTaxo);
             $logger->trace(_(" => params : ") . print_r($params, TRUE));
             try {
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
@@ -462,7 +463,7 @@ function storeObservations($logger, $options, $oauth)
                 $params = array(
                     'user_pw' => $options['user_pw'],
                     'user_email' => $options['user_email'],
-                    'idTaxo_group' => $idTaxo,
+                    'id_taxo_group' => $idTaxo,
                     'pagination_key' => rtrim($pageKey[1])
                 );
                 $i += 1;
@@ -512,15 +513,7 @@ $logger = Logger::getRootLogger();
 $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 
 $logger->info(_("Début de l'export"));
-//$logger->trace(var_export($options, true));
-
-// Get tokens saved from previous session, to restart
-if (file_exists(getenv('HOME') . '/.evn_ini.json')) {
-    $logger->debug(_("Lecture du fichier de tokens de session ") . getenv('HOME') . '/.evn_ini.json');
-    $checkpoint = json_decode(file_get_contents(getenv('HOME') . '/.evn_ini.json'), TRUE);
-} else {
-    $checkpoint = array();
-}
+$logger->trace(var_export($options, true));
 
 // Get authorization from Biolovision
 try {
@@ -540,32 +533,32 @@ try {
     // $logger->trace(_("Groupe taxonomique = ") . $idTaxo);
 // }
 
-//// Download and store entities
-//$logger->info(_("Téléchargement et stockage des 'entities'"));
-//storeEntities($logger, $options, $oauth);
+// Download and store entities
+$logger->info(_("Téléchargement et stockage des 'entities'"));
+storeEntities($logger, $options, $oauth);
 
-//// Download and store export organizations
-//$logger->info(_("Téléchargement et stockage des 'export_organizations'"));
-//storeExport_Orgs($logger, $options, $oauth);
+// Download and store export organizations
+$logger->info(_("Téléchargement et stockage des 'export_organizations'"));
+storeExport_Orgs($logger, $options, $oauth);
 
 // Download and store places
 $logger->info(_("Téléchargement et stockage des 'places'"));
 storePlaces($logger, $options, $oauth, $checkpoint);
 
-//// Download and store admin units
-//$logger->info(_("Téléchargement et stockage des 'local admin units'"));
-//storeAdminUnits($logger, $options, $oauth);
+// Download and store admin units
+$logger->info(_("Téléchargement et stockage des 'local admin units'"));
+storeAdminUnits($logger, $options, $oauth);
 
-//// Download and store export families
-//$logger->info(_("Téléchargement et stockage des 'families'"));
-//storeFamilies($logger, $options, $oauth);
+// Download and store export families
+$logger->info(_("Téléchargement et stockage des 'families'"));
+storeFamilies($logger, $options, $oauth);
 
-//// Download and store export species
-//$logger->info(_("Téléchargement et stockage des 'species'"));
-//storeSpecies($logger, $options, $oauth);
+// Download and store export species
+$logger->info(_("Téléchargement et stockage des 'species'"));
+storeSpecies($logger, $options, $oauth);
 
-//// Download and store export observations
-//$logger->info(_("Téléchargement et stockage des 'observations'"));
-//storeObservations($logger, $options, $oauth);
+// Download and store export observations
+$logger->info(_("Téléchargement et stockage des 'observations'"));
+storeObservations($logger, $options, $oauth);
 
 $dbh = null;

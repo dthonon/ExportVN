@@ -105,9 +105,9 @@ case "$cmd" in
 	
 	download)
 		echo "Téléchargement depuis le site : ${config[evn_site]} à $(date)"
-		## Remove previous downloaded files
-		#echo "Suppression des fichiers précédents"
-		#rm -f ~/${config[evn_file_store]}/*.json
+		# Remove previous downloaded files
+		echo "Suppression des fichiers précédents"
+		rm -f ~/${config[evn_file_store]}/*.json
 
 		# Download from biolovision and store in json
 		php ExportJson.php \
