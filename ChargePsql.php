@@ -33,7 +33,7 @@
  *
  */
 
-require('log4php/Logger.php');
+require_once 'log4php/Logger.php';
 
 // Create logger and set level
 Logger::configure('config.xml');
@@ -472,6 +472,10 @@ function bExtendedInfoMortality($data, &$obs, $suffix)
             case "poison":
                 $logger->trace("    " . $suffix . "poison => " . $value);
                 $obs[$suffix . "poison"] = $value;
+                break;
+            case "pollution":
+                $logger->trace("    " . $suffix . "pollution => " . $value);
+                $obs[$suffix . "pollution"] = $value;
                 break;
             default:
                 $logger->warn(_("    Elément extended_info_mortality inconnu : ") . $key);
@@ -1050,7 +1054,7 @@ $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 $logger->info("Début de l'import");
 //$logger->trace(var_export($options, true));
 
-// Open database
+// Open database connection
 try {
     $dbh = new PDO(
         'pgsql:dbname=' . $options['db_name']
@@ -1072,4 +1076,5 @@ species($dbh);
 // Store observations in database
 observations($dbh);
 
+// Close database connection
 $dbh = null;

@@ -6,6 +6,7 @@
 #          - config => Configure parameters for scripts (sites, passwords...).
 #          - download => Export from VisioNature fo json files, using API
 #          - load => Load json files in Postgresql
+#          - init => Prepare DB init script
 #
 # Copyright (c) 2016, Daniel Thonon
 #  All rights reserved.
@@ -89,20 +90,35 @@ case "$cmd" in
         echo -n "Répertoire de stockage des fichiers json reçus : "
         read evn_file_store
 		echo "evn_file_store=$evn_file_store" >> $evn_conf
-		
+
         echo -n "Nom de la base postgresql : "
         read evn_db_name
 		echo "evn_db_name=$evn_db_name" >> $evn_conf
+        echo -n "Groupe/rôle de la base postgresql : "
+        read evn_db_group
+		echo "evn_db_group=$evn_db_group" >> $evn_conf
         echo -n "Compte/rôle de la base postgresql : "
         read evn_db_user
 		echo "evn_db_user=$evn_db_user" >> $evn_conf
         echo -n "Mot de passe de la base postgresql : "
         read evn_db_pw
 		echo "evn_db_pw=$evn_db_pw" >> $evn_conf
-		
+
 		echo "evn_logging=INFO" >> $evn_conf
  	;;
-	
+
+    init)
+        cp InitDB.sql InitDB.tmp
+        sed -i -e "s/evn_db_name/${config[evn_db_name]}/" InitDB.tmp
+        sed -i -e "s/evn_db_group/${config[evn_db_group]}/" InitDB.tmp
+        sed -i -e "s/evn_db_user/${config[evn_db_user]}/" InitDB.tmp
+        sed -i -e "s/evn_db_pw/${config[evn_db_pw]}/" InitDB.tmp
+        mv InitDB.tmp Init_${config[evn_db_name]}.sql
+
+        echo "Pour (re)créer la base de données, exécutez la commande suivante depuis le compte postgres"
+        echo "$ psql -f $(pwd)/Init_${config[evn_db_name]}.sql"
+    ;;
+
 	download)
 		echo "Téléchargement depuis le site : ${config[evn_site]} à $(date)"
 		# Remove previous downloaded files
@@ -118,10 +134,10 @@ case "$cmd" in
 			--consumer_secret=${config[evn_consumer_secret]} \
 			--file_store=${config[evn_file_store]} \
 			--logging=${config[evn_logging]}
-		
+
 		echo "Fin de l'export à $(date)"
  	;;
-	
+
 	store)
 		echo "Chargement des fichiers json dans la base ${config[evn_db_name]} à $(date)"
 		php ChargePsql.php \
@@ -130,7 +146,7 @@ case "$cmd" in
 			--db_pw=${config[evn_db_pw]}\
 			--file_store=${config[evn_file_store]} \
 			--logging=${config[evn_logging]}
-			
+
 		echo "Finalisation de la base de données"
 		psql -f ChargePsql.sql ${config[evn_db_name]}
 
@@ -138,7 +154,7 @@ case "$cmd" in
 
  	;;
    *)
-	echo "Usage: $SCRIPTNAME {config|download|store}" >&2
+	echo "Usage: $SCRIPTNAME {config|download|store|init}" >&2
  	;;
 esac
 

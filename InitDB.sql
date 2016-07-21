@@ -1,5 +1,5 @@
 
--- Initialize Postgresql database, LPO Isère template
+-- Initialize Postgresql database, template
 
 -- Copyright (c) 2016 Daniel Thonon <d.thonon9@gmail.com>
 -- All rights reserved.
@@ -28,49 +28,41 @@
 
 -- @license http://www.opensource.org/licenses/mit-license.html MIT License
 
--- Delete existing DB and roles 
-DROP DATABASE IF EXISTS faune_isere;
-DROP ROLE IF EXISTS xfer38;
-DROP ROLE IF EXISTS lpo_isere;
+-- Delete existing DB and roles
+DROP DATABASE IF EXISTS evn_db_name;
+DROP ROLE IF EXISTS evn_db_user;
+DROP ROLE IF EXISTS evn_db_group;
 
--- Role: lpo_isere
-CREATE ROLE lpo_isere
+-- Group role: evn_db_group
+CREATE ROLE evn_db_group
   NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
 
--- Role: xfer38
-CREATE ROLE xfer38 LOGIN
-  ENCRYPTED PASSWORD 'md57bf7dbe4fa483bc1fa5edf0cd71069a9'
+-- Import role: evn_db_user
+CREATE ROLE evn_db_user LOGIN
+  PASSWORD 'evn_db_pw'
   NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
-GRANT lpo_isere TO xfer38;
+GRANT evn_db_group TO evn_db_user;
 
 -- Database: faune_isere
-CREATE DATABASE faune_isere
-  WITH OWNER = lpo_isere
+CREATE DATABASE evn_db_name
+  WITH OWNER = evn_db_group
        ENCODING = 'UTF8'
        TABLESPACE = pg_default
        LC_COLLATE = 'fr_FR.UTF-8'
        LC_CTYPE = 'fr_FR.UTF-8'
        CONNECTION LIMIT = -1;
--- GRANT CONNECT, TEMPORARY ON DATABASE faune_isere TO public;
--- GRANT ALL ON DATABASE faune_isere TO lpo38;
-GRANT ALL ON DATABASE faune_isere TO lpo_isere;
--- GRANT CONNECT ON DATABASE faune_isere TO nature_isere;
+GRANT ALL ON DATABASE evn_db_name TO evn_db_group;
 
-\c faune_isere
+\c evn_db_name
 
-CREATE EXTENSION postgis
-  SCHEMA public
-  VERSION "2.2.2";
+CREATE EXTENSION postgis;
 
-CREATE EXTENSION postgis_topology
-  SCHEMA topology
-  VERSION "2.2.2";
+CREATE EXTENSION postgis_topology;
 
-ALTER DEFAULT PRIVILEGES 
+ALTER DEFAULT PRIVILEGES
     GRANT INSERT, SELECT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES
     TO postgres;
 
-ALTER DEFAULT PRIVILEGES 
+ALTER DEFAULT PRIVILEGES
     GRANT INSERT, SELECT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLES
-    TO lpo_isere;
-
+    TO evn_db_group;
