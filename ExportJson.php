@@ -278,7 +278,7 @@ function storeFamilies($logger, $options, $oauth)
  * @param void $oauth
  *            oauth acces to biolovision site
  * @return $taxo_lits
-              list of taxo groups available
+ *              list of taxo groups available
  * @author Daniel Thonon
  *
  */
@@ -414,7 +414,7 @@ function storeObservations($logger, $options, $oauth)
     // First, request list of taxo groups enabled
     // Note : as side effect, the taxo_group file is created here
     $taxoList = storeTaxoGroups($logger, $options, $oauth);
-    $taxoList = array(22);
+    // $taxoList = array(22);
 
     $i = 1; // Compteur de demandes
 
@@ -452,15 +452,15 @@ function storeObservations($logger, $options, $oauth)
 
                 // Check if data received
                 if ($sightings + $forms == 0) { // Empty file => exit
-                    $logger->trace(_("Aucune données reçues => attente"));
-                    // break;
-                    sleep(10);
-                    $params = array(
-                        'user_pw' => $options['user_pw'],
-                        'user_email' => $options['user_email'],
-                        'id_taxo_group' => $idTaxo,
-                        'pagination_key' => rtrim($pageKey[1])
-                    );
+                    $logger->trace(_("Aucune données reçues "));
+                    break;
+                    // sleep(10);
+                    // $params = array(
+                    //     'user_pw' => $options['user_pw'],
+                    //     'user_email' => $options['user_email'],
+                    //     'id_taxo_group' => $idTaxo,
+                    //     'pagination_key' => rtrim($pageKey[1])
+                    // );
                 } else { // Received some data
                     $logger->trace(_("Données reçues => stockage en json"));
                     file_put_contents(
@@ -549,11 +549,11 @@ try {
 // // Download and store export organizations
 // $logger->info(_("Téléchargement et stockage des 'export_organizations'"));
 // storeExport_Orgs($logger, $options, $oauth);
-//
-// // Download and store places
-// $logger->info(_("Téléchargement et stockage des 'places'"));
-// storePlaces($logger, $options, $oauth, $checkpoint);
-//
+
+// Download and store places
+$logger->info(_("Téléchargement et stockage des 'places'"));
+storePlaces($logger, $options, $oauth, $checkpoint);
+
 // // Download and store admin units
 // $logger->info(_("Téléchargement et stockage des 'local admin units'"));
 // storeAdminUnits($logger, $options, $oauth);
@@ -562,9 +562,9 @@ try {
 // $logger->info(_("Téléchargement et stockage des 'families'"));
 // storeFamilies($logger, $options, $oauth);
 //
-// // Download and store export species
-// $logger->info(_("Téléchargement et stockage des 'species'"));
-// storeSpecies($logger, $options, $oauth);
+// Download and store export species
+$logger->info(_("Téléchargement et stockage des 'species'"));
+storeSpecies($logger, $options, $oauth);
 
 // Download and store export observations
 $logger->info(_("Téléchargement et stockage des 'observations'"));
