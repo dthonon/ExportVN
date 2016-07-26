@@ -43,7 +43,7 @@ CREATE ROLE evn_db_user LOGIN
   NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
 GRANT evn_db_group TO evn_db_user;
 
--- Database: faune_isere
+-- Database: evn_db_name
 CREATE DATABASE evn_db_name
   WITH OWNER = evn_db_group
        ENCODING = 'UTF8'
@@ -55,8 +55,15 @@ GRANT ALL ON DATABASE evn_db_name TO evn_db_group;
 
 \c evn_db_name
 
-CREATE EXTENSION postgis;
+-- Schema : evn_db_schema
+CREATE SCHEMA evn_db_schema
+  AUTHORIZATION evn_db_group;
 
+-- Extension d'administration pgAdmin
+CREATE EXTENSION adminpack;
+
+-- Extensions postgis
+CREATE EXTENSION postgis;
 CREATE EXTENSION postgis_topology;
 
 ALTER DEFAULT PRIVILEGES

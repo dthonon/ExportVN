@@ -32,6 +32,8 @@ Procédure d'installation sur Linux
         $ cd ExportVN
         $ ./evn.sh config
         puis renseigner les valeurs propres à votre site
+        $ ./evn.sh init
+        puis exécuter le script depuis le compte postgres
 
 6) Optionnel : pour formatter (PrettyPrint.sh) les fichiers json
     CentOS 7 :

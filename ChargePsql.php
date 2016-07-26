@@ -1036,7 +1036,10 @@ ini_set('memory_limit', '1024M');
 $shortOpts = ""; // No short form options
 
 $longOpts = array(
+    "db_host:",         // Required: database host
+    "db_port:",         // Required: database ip port
     "db_name:",         // Required: database name
+    "db_schema:",         // Required: database name
     "db_user:",         // Required: database role
     "db_pw:",           // Required: database role password
     "file_store:",      // Required: directory where downloaded json files are stored. Relative to $HOME
@@ -1058,12 +1061,22 @@ $logger->info("Début de l'import");
 try {
     $dbh = new PDO(
         'pgsql:dbname=' . $options['db_name']
-        . ';user=' . $options['db_user']
-        . ';password=' . $options['db_pw']
-        . ';host=localhost'
+        . ';host=' . $options['db_host']
+        . ';port=' . $options['db_port'],
+        $options['db_user'],
+        $options['db_pw'],
+        array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
     );
+
 } catch (PDOException $e) {
-    $logger->error("Erreur !: " . $e->getMessage());
+    $logger->fatal(_("Erreur de connexion à la base: ") . $e->getMessage());
+    die();
+}
+// Set schema in default path
+try {
+    $dbh->exec('SET search_path TO ' . $options['db_schema']);
+}catch (PDOException $e) {
+    $logger->fatal(_("Erreur de positionnement du schéma ") . $options['db_schema'] . $dbh->errorMsg());
     die();
 }
 

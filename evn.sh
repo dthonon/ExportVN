@@ -41,7 +41,7 @@ unset config # clear parameter array
 typeset -A config # init array
 
 # echo "commande = $cmd"
-if [[ "$cmd" != "config" && -f $evn_conf ]]  # Check if exists and not configuring
+if [[ -f $evn_conf ]]  # Check if exists and load existing config
 then
 	echo "Chargement de la configuration"
 	# Parse configuration file
@@ -57,59 +57,51 @@ then
 else
 	echo "Configuration initiale"
 	cmd=config
+    # Prepare default values
+    config[evn_db_host]="localhost"
+    config[evn_db_port]="5432"
+    config[evn_logging]="INFO"
 fi
 
 case "$cmd" in
     config)
-		unset evn_site
-		unset evn_user_email
-		unset evn_user_pw
-		unset evn_consumer_key
-		unset evn_consumer_secret
-		unset evn_file_store
-		unset evn_db_name
-		unset evn_db_user
-		unset evn_db_pw
-		unset evn_logging
 
-        echo -n "Site VisioNature : "
-        read evn_site
+        read -e -p "Site VisioNature : " -i "${config[evn_site]}" evn_site
 		echo "evn_site=$evn_site" > $evn_conf
-        echo -n "Compte VisioNature : "
-        read evn_user_email
+        read -e -p "Compte VisioNature : " -i "${config[evn_user_email]}" evn_user_email
 		echo "evn_user_email=$evn_user_email" >> $evn_conf
-        echo -n "Mot de passe VisioNature : "
-        read evn_user_pw
+        read -e -p "Mot de passe VisioNature : " -i "${config[evn_user_pw]}" evn_user_pw
 		echo "evn_user_pw=$evn_user_pw" >> $evn_conf
-        echo -n "Consumer key VisioNature : "
-        read evn_consumer_key
+        read -e -p "Consumer key VisioNature : " -i "${config[evn_consumer_key]}" evn_consumer_key
 		echo "evn_consumer_key=$evn_consumer_key" >> $evn_conf
-        echo -n "Consumer secret VisioNature : "
-        read evn_consumer_secret
+        read -e -p "Consumer secret VisioNature : " -i "${config[evn_consumer_secret]}" evn_consumer_secret
 		echo "evn_consumer_secret=$evn_consumer_secret" >> $evn_conf
-        echo -n "Répertoire de stockage des fichiers json reçus : "
-        read evn_file_store
+        read -e -p "Répertoire de stockage des fichiers json reçus : " -i "${config[evn_file_store]}" evn_file_store
 		echo "evn_file_store=$evn_file_store" >> $evn_conf
 
-        echo -n "Nom de la base postgresql : "
-        read evn_db_name
+        read -e -p "Hôte de la base postgresql : " -i "${config[evn_db_host]}" evn_db_host
+		echo "evn_db_host=$evn_db_host" >> $evn_conf
+        read -e -p "Port de la base postgresql : " -i "${config[evn_db_port]}" evn_db_port
+		echo "evn_db_port=$evn_db_port" >> $evn_conf
+        read -e -p "Nom de la base postgresql : " -i "${config[evn_db_name]}" evn_db_name
 		echo "evn_db_name=$evn_db_name" >> $evn_conf
-        echo -n "Groupe/rôle de la base postgresql : "
-        read evn_db_group
+        read -e -p "Schéma de la base postgresql : " -i "${config[evn_db_schema]}" evn_db_schema
+		echo "evn_db_schema=$evn_db_schema" >> $evn_conf
+        read -e -p "Groupe/rôle de la base postgresql : " -i "${config[evn_db_group]}" evn_db_group
 		echo "evn_db_group=$evn_db_group" >> $evn_conf
-        echo -n "Compte/rôle de la base postgresql : "
-        read evn_db_user
+        read -e -p "Compte/rôle de la base postgresql : " -i "${config[evn_db_user]}" evn_db_user
 		echo "evn_db_user=$evn_db_user" >> $evn_conf
-        echo -n "Mot de passe de la base postgresql : "
-        read evn_db_pw
+        read -e -p "Mot de passe de la base postgresql : " -i "${config[evn_db_pw]}" evn_db_pw
 		echo "evn_db_pw=$evn_db_pw" >> $evn_conf
 
-		echo "evn_logging=INFO" >> $evn_conf
+        read -e -p "Niveau de logging [TRACE/DEBUG/INFO] : " -i "${config[evn_logging]}" evn_logging
+		echo "evn_logging=$evn_logging" >> $evn_conf
  	;;
 
     init)
         cp InitDB.sql InitDB.tmp
         sed -i -e "s/evn_db_name/${config[evn_db_name]}/" InitDB.tmp
+        sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" InitDB.tmp
         sed -i -e "s/evn_db_group/${config[evn_db_group]}/" InitDB.tmp
         sed -i -e "s/evn_db_user/${config[evn_db_user]}/" InitDB.tmp
         sed -i -e "s/evn_db_pw/${config[evn_db_pw]}/" InitDB.tmp
@@ -141,20 +133,23 @@ case "$cmd" in
 	store)
 		echo "Chargement des fichiers json dans la base ${config[evn_db_name]} à $(date)"
 		php ChargePsql.php \
-			--db_name=${config[evn_db_name]} \
+            --db_host=${config[evn_db_host]} \
+            --db_port=${config[evn_db_port]} \
+            --db_name=${config[evn_db_name]} \
+            --db_schema=${config[evn_db_schema]} \
 			--db_user=${config[evn_db_user]} \
 			--db_pw=${config[evn_db_pw]}\
 			--file_store=${config[evn_file_store]} \
 			--logging=${config[evn_logging]}
 
 		echo "Finalisation de la base de données"
-		psql -f ChargePsql.sql ${config[evn_db_name]}
+		psql -f ChargePsql.sql "dbname=${config[evn_db_name]} options=--search_path=${config[evn_db_schema]},public"
 
 		echo "Fin du chargement à $(date)"
 
  	;;
    *)
-	echo "Usage: $SCRIPTNAME {config|download|store|init}" >&2
+	echo "Usage: $SCRIPTNAME {config|init|download|store}" >&2
  	;;
 esac
 
