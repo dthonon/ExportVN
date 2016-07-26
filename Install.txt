@@ -1,0 +1,45 @@
+Procédure d'installation sur Linux
+
+1) Préparer l'installation
+    CentOS 7 :
+        $ sudo yum install epel-release
+        $ sudo yum update
+        $ sudo yum install git
+
+    Ubuntu 16.04 :
+        $ sudo apt install git
+
+2) Installer PHP et les modules requis :
+    CentOS 7 :
+        $ sudo yum install php php-pear php-pgsql php-pecl-oauth
+
+    Ubuntu 16.04 :
+        $ sudo apt install php php-pear php-pgsql php-oauth
+
+    Puis configurer ($ sudo nano /etc/php.ini) le paramètre date.timezone = Europe/Paris
+
+3) Installer log4php
+    CentOS 7 et Ubuntu 16.04 :
+        $ sudo pear channel-discover pear.apache.org/log4php
+        $ sudo pear install log4php/Apache_log4php
+
+4) Installer les scripts de téléchargement
+    CentOS 7 et Ubuntu 16.04 :
+        $ git clone https://github.com/dthonon/ExportVN
+
+5) configurer une copie locale des scripts de lancement
+    CentOS 7 et Ubuntu 16.04 :
+        $ cd ExportVN
+        $ ./evn.sh config
+        puis renseigner les valeurs propres à votre site
+
+6) Optionnel : pour formatter (PrettyPrint.sh) les fichiers json
+    CentOS 7 :
+        $ sudo yum install yajl
+    Ubuntu 16.04 :
+        $ sudo apt install yajl-tools
+
+7) Utilisation
+    CentOS 7 et Ubuntu 16.04 :
+        $ ./evn.sh download
+        $ ./env.sh store
