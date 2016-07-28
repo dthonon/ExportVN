@@ -401,8 +401,6 @@ function storeSpecies($logger, $options, $oauth)
  *            Options for user/password/...
  * @param void $oauth
  *            oauth acces to biolovision site
- * @param void $dbh
- *            Database connection
  * @return void
  * @author Daniel Thonon
  *
@@ -542,26 +540,26 @@ try {
     // $logger->trace(_("Groupe taxonomique = ") . $idTaxo);
 // }
 
-// // Download and store entities
-// $logger->info(_("Téléchargement et stockage des 'entities'"));
-// storeEntities($logger, $options, $oauth);
-//
-// // Download and store export organizations
-// $logger->info(_("Téléchargement et stockage des 'export_organizations'"));
-// storeExport_Orgs($logger, $options, $oauth);
+// Download and store entities
+$logger->info(_("Téléchargement et stockage des 'entities'"));
+storeEntities($logger, $options, $oauth);
+
+// Download and store export organizations
+$logger->info(_("Téléchargement et stockage des 'export_organizations'"));
+storeExport_Orgs($logger, $options, $oauth);
 
 // Download and store places
 $logger->info(_("Téléchargement et stockage des 'places'"));
-storePlaces($logger, $options, $oauth, $checkpoint);
+storePlaces($logger, $options, $oauth);
 
-// // Download and store admin units
-// $logger->info(_("Téléchargement et stockage des 'local admin units'"));
-// storeAdminUnits($logger, $options, $oauth);
-//
-// // Download and store export families
-// $logger->info(_("Téléchargement et stockage des 'families'"));
-// storeFamilies($logger, $options, $oauth);
-//
+// Download and store admin units
+$logger->info(_("Téléchargement et stockage des 'local admin units'"));
+storeAdminUnits($logger, $options, $oauth);
+
+// Download and store export families
+$logger->info(_("Téléchargement et stockage des 'families'"));
+storeFamilies($logger, $options, $oauth);
+
 // Download and store export species
 $logger->info(_("Téléchargement et stockage des 'species'"));
 storeSpecies($logger, $options, $oauth);
@@ -569,5 +567,3 @@ storeSpecies($logger, $options, $oauth);
 // Download and store export observations
 $logger->info(_("Téléchargement et stockage des 'observations'"));
 storeObservations($logger, $options, $oauth);
-
-$dbh = null;

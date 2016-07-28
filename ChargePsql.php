@@ -1,6 +1,6 @@
 <?php
 /**
- * Load exported json files to Postgresql database
+ * Load exported json files to Postgresql database.
  *
  * PHP version 5
  *
@@ -33,6 +33,7 @@
  *
  */
 
+
 require_once 'log4php/Logger.php';
 
 // Create logger and set level
@@ -40,276 +41,248 @@ Logger::configure('config.xml');
 $logger = Logger::getRootLogger();
 
 /**
- * Finds the type of the value, based on its format
- *
- * @param string $val
- *            The value to be parsed
- * @return string The ddl type of $val
- * @author Daniel Thonon
+ * Provide access functions to the database.
  *
  */
-function typeOfValue($val)
+class DbAccess
 {
-    if (preg_match('/^-?\d+$/', $val) == 1) {
-        return 'integer';
-    } elseif (preg_match('/^-?\d+\.\d+$/', $val) == 1) {
-        return 'double precision';
-    } else {
-        return 'character varying';
+    /** Holds the Logger. */
+    private $log;
+
+    /** Holds the dh handle. */
+    private $dbh;
+
+    /** Holds the table name */
+    private $table;
+
+    /** Constructor stores parameters. */
+    public function __construct($dbh, $table)
+    {
+        $this->log = Logger::getLogger(__CLASS__);
+        $this->dbh = $dbh;
+        $this->table = $table;
     }
-}
 
-/**
- * Prepares the name,type part of the table creation DDL statement
- *
- * @param void $logger
- *            Logger for debug message
- * @param array $data
- *            Data to parse to find the names and types
- * @return string The DDL statement (name type...)
- * @author Daniel Thonon
- *
- */
-function ddlNamesTypes($logger, $data)
-{
-    // Analyze first element to define DDL types
-    $logger->trace(_("Analyse de l'élement : ") . print_r($data[1], true));
-    $ddl = array();
-    reset($data[1]);
-    // Find the types
-    foreach ($data[1] as $key => $value) {
-        $ddl[$key] = typeOfValue($value);
-    }
-    $logger->trace(print_r($ddl, true));
-    return $ddl;
-}
-
-/**
- * Insert the rows in a table, creating new colums as needed
- *
- * @param void $logger
- *            Logger for debug message
- * @param array $data
- *            Data to be iterated over to insert rows
- * @param void $dbh
- *            Database connection
- * @param string $table
- *            Name of the table for insertion
- * @param array $ddlNT
- *            Array of (name, type) of the DDL columns already created
- * @return array $ddlNT
- *         Array of (name, type) of the DDL columns modified if needed
- * @author Daniel Thonon
- *
- */
-function insertRows($logger, $data, $dbh, $table, $ddlNT)
-{
-    $logger->debug("Insertion des lignes dans " . $table);
-    $dbh->beginTransaction();
-    // Loop over each data element
-    $nbLines = 0;
-    reset($data);
-    foreach ($data as $key => $val) {
-        // $logger->trace(_("Analyse de l'élement pour insertion : ") . print_r($val, true));
-        $rowKeys = "(";
-        $rowVals = "(";
-        reset($val);
-        foreach ($val as $k => $v) {
-            // Check if column already exists in the table
-            if (! array_key_exists($k, $ddlNT)) {
-                $logger->debug(_("Colonne absente de la table : ") . $k);
-                // Creation of the new column, outside of insertion transaction
-                $dbh->commit();
-                $ddlStmt = $k . " " . typeOfValue($v) . ";";
-                $ddlStmt = "ALTER TABLE " . $table . " ADD COLUMN " . $ddlStmt;
-                $logger->debug(_("Modification de la table ") . $ddlStmt);
-                $dbh->exec($ddlStmt);
-                $ddlNT[$k] = typeOfValue($v); // Update column list
-                $dbh->beginTransaction();
-            }
-
-            $rowKeys .= $k . ","; // Add key to insert statement
-
-            // Special case for empty insee column, forced to 0
-            if ($k == "insee" && $v == "") {
-                $v = "0";
-            }
-            // Special case for empty county column, forced to 0
-            if ($k == "county" && $v == "") {
-                $v = "0";
-            }
-            $rowVals .= "'" . str_replace("'", "''", $v) . "'" . ",";
+    /**
+     * Finds the type of the value, based on its format
+     *
+     * @param string $val
+     *            The value to be parsed
+     * @return string The ddl type of $val
+     * @author Daniel Thonon
+     *
+     */
+    private function typeOfValue($val)
+    {
+        if (preg_match('/^-?\d+$/', $val) == 1) {
+            return 'integer';
+        } elseif (preg_match('/^-?\d+\.\d+$/', $val) == 1) {
+            return 'double precision';
+        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:.*$/', $val) == 1) {
+            return 'timestamp with time zone';
+        } else {
+            return 'character varying';
         }
-        $rowKeys = substr($rowKeys, 0, - 1) . ")";
-        $rowVals = substr($rowVals, 0, - 1) . ")";
-        $inData = "INSERT INTO " . $table . $rowKeys . " VALUES " . $rowVals;
-        // $logger->trace($inData);
-        $nbLines += $dbh->exec($inData) or die(
-            $logger->fatal(
-                "Insertion incorrecte : " .
-                $inData . "\n" . print_r($dbh->errorInfo(), true)
-            )
-        );
     }
-    $dbh->commit();
-    $logger->debug($nbLines . _(" lignes insérées dans ") . $table);
-    return $ddlNT;
-}
 
-/**
- * Drop table if exists
- *
- * @param void $logger
- *            Logger for debug message
- * @param array $data
- *            Data to be iterated over to create columns
- * @param void $dbh
- *            Database connection
- * @param string $table
- *            Name of the table for insertion
- * @return array $ddlNT
- *         Array of (name, type) of the DDL columns created
- * @author Daniel Thonon
- *
- */
-function dropTable($logger, $dbh, $table)
-{
-    // Delete if exists and create table
-    $logger->info(_("Suppression de la table ") . $table);
-    $dbh->exec("DROP TABLE IF EXISTS " . $table);
-}
-
-/**
- * Creates table, that must not exist before
- *
- * @param void $logger
- *            Logger for debug message
- * @param array $data
- *            Data to be iterated over to create columns
- * @param void $dbh
- *            Database connection
- * @param string $table
- *            Name of the table for insertion
- * @return array $ddlNT
- *         Array of (name, type) of the DDL columns created
- * @author Daniel Thonon
- *
- */
-function createTable($logger, $data, $dbh, $table)
-{
-    // Prepare the DDL statement based on the analyzed types
-    $ddlNT = ddlNamesTypes($logger, $data);
-    $ddlStmt = " (";
-    foreach ($ddlNT as $k => $v) {
-        $ddlStmt .= $k . " " . $v . ",";
+    /**
+     * Prepares the name,type part of the table creation DDL statement
+     *
+     * @param array $data
+     *            Data to parse to find the names and types
+     * @return string The DDL statement (name type...)
+     * @author Daniel Thonon
+     *
+     */
+    private function ddlNamesTypes($data)
+    {
+        // Analyze first element to define DDL types
+        $this->log->trace(_("Analyse de l'élement : ") . print_r($data[1], true));
+        $ddl = array();
+        reset($data[1]);
+        // Find the types
+        foreach ($data[1] as $key => $value) {
+            $ddl[$key] = $this->typeOfValue($value);
+        }
+        $this->log->trace(print_r($ddl, true));
+        return $ddl;
     }
-    $ddlStmt = substr($ddlStmt, 0, - 1) . ");";
-    $ddlStmt = "CREATE TABLE " . $table . $ddlStmt;
-    $logger->info(_("Création de la table ") . $ddlStmt);
-    $dbh->exec($ddlStmt);
-    return $ddlNT;
-}
 
-/**
- * Loop on json places files and store in database
- *
- * @param array $dbh
- *            database handle
- * @return void
- * @author Daniel Thonon
- *
- */
+    /**
+     * Insert the rows in a table, creating new colums as needed
+     *
+     * @param array $data
+     *            Data to be iterated over to insert rows
+     * @param array $ddlNT
+     *            Array of (name, type) of the DDL columns already created
+     * @return array $ddlNT
+     *         Array of (name, type) of the DDL columns modified if needed
+     * @author Daniel Thonon
+     *
+     */
+    public function insertRows($data, $ddlNT)
+    {
+        $this->log->debug("Insertion des lignes dans " . $this->table);
+        $this->dbh->beginTransaction();
+        // Loop over each data element
+        $nbLines = 0;
+        reset($data);
+        foreach ($data as $key => $val) {
+            // $this->log->trace(_("Analyse de l'élement pour insertion : ") . print_r($val, true));
+            $rowKeys = "(";
+            $rowVals = "(";
+            reset($val);
+            foreach ($val as $k => $v) {
+                // Check if column already exists in the table
+                if (! array_key_exists($k, $ddlNT)) {
+                    $this->log->debug(_("Colonne absente de la table : ") . $k);
+                    // Creation of the new column, outside of insertion transaction
+                    $this->dbh->commit();
+                    $ddlStmt = $k . " " . $this->typeOfValue($v) . ";";
+                    $ddlStmt = "ALTER TABLE " . $this->table . " ADD COLUMN " . $ddlStmt;
+                    $this->log->debug(_("Modification de la table ") . $ddlStmt);
+                    $this->dbh->exec($ddlStmt);
+                    $ddlNT[$k] = $this->typeOfValue($v); // Update column list
+                    $this->dbh->beginTransaction();
+                }
 
-function places($dbh)
-{
-    global $logger;
-    global $options;
+                $rowKeys .= $k . ","; // Add key to insert statement
 
-    $ddlNT = array(); // List of columns, kept across files
-    $fileMin = 1;    # min file for debug
-    $fileMax = 1000; # max file for debug
-
-    $logger->info("Chargement des fichiers json de places");
-
-    // First, drop places table
-    dropTable($logger, $dbh, "places");
-    $obsDropped = true;
-
-    // Loop on dowloaded files
-    for ($fic = $fileMin; $fic < $fileMax; $fic++) {
-        if (file_exists(
-            getenv('HOME') . '/' . $options['file_store'] .
-            "/places_" . $fic . ".json"
-        )) {
-            $logger->info(
-                _("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] .
-                "/places_" . $fic . ".json"
+                // Special case for empty insee column, forced to 0
+                if ($k == "insee" && $v == "") {
+                    $v = "0";
+                }
+                // Special case for empty county column, forced to 0
+                if ($k == "county" && $v == "") {
+                    $v = "0";
+                }
+                $rowVals .= "'" . str_replace("'", "''", $v) . "'" . ",";
+            }
+            $rowKeys = substr($rowKeys, 0, - 1) . ")";
+            $rowVals = substr($rowVals, 0, - 1) . ")";
+            $inData = "INSERT INTO " . $this->table . $rowKeys . " VALUES " . $rowVals;
+            // $this->log->trace($inData);
+            $nbLines += $this->dbh->exec($inData) or die(
+                $this->log->fatal(
+                    "Insertion incorrecte : " .
+                    $inData . "\n" . print_r($this->dbh->errorInfo(), true)
+                )
             );
-            // Analyse du fichier
-            $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/places_" . $fic . ".json");
-
-            $logger->trace("Début de l'analyse des places");
-            $data = json_decode($response, true);
-
-            // Create table on first loop
-            if ($fic == 1) {
-                $ddlNT = createTable($logger, $data["data"], $dbh, "places");
-            }
-            // Insert rows
-            $ddlNT = insertRows($logger, $data["data"], $dbh, "places", $ddlNT);
         }
+        $this->dbh->commit();
+        $this->log->debug($nbLines . _(" lignes insérées dans ") . $this->table);
+        return $ddlNT;
     }
+
+    /**
+     * Drop table if exists
+     *
+     * @author Daniel Thonon
+     *
+     */
+    public function dropTable()
+    {
+        // Delete if exists and create table
+        $this->log->info(_("Suppression de la table ") . $this->table);
+        $this->dbh->exec("DROP TABLE IF EXISTS " . $this->table);
+    }
+
+    /**
+     * Creates table, that must not exist before
+     *
+     * @param array $data
+     *            Data to be iterated over to create columns
+     * @return array $ddlNT
+     *         Array of (name, type) of the DDL columns created
+     * @author Daniel Thonon
+     *
+     */
+    public function createTable($data)
+    {
+        // Prepare the DDL statement based on the analyzed types
+        $ddlNT = $this->ddlNamesTypes($data);
+        $ddlStmt = " (";
+        foreach ($ddlNT as $k => $v) {
+            $ddlStmt .= $k . " " . $v . ",";
+        }
+        $ddlStmt = substr($ddlStmt, 0, - 1) . ");";
+        $ddlStmt = "CREATE TABLE " . $this->table . $ddlStmt;
+        $this->log->info(_("Création de la table ") . $ddlStmt);
+        $this->dbh->exec($ddlStmt);
+        return $ddlNT;
+    }
+
 }
 
 /**
- * Loop on json species files and store in database
- *
- * @param array $dbh
- *            database handle
- * @return void
- * @author Daniel Thonon
+ * Stores files in a database table.
  *
  */
-
-function species($dbh)
+class StoreFile
 {
-    global $logger;
-    global $options;
+    /** Holds the Logger. */
+    private $log;
 
-    $ddlNT = array(); // List of columns, kept across files
-    $fileMin = 1;    # min file for debug
-    $fileMax = 1000; # max file for debug
+    /** Holds the dh handle. */
+    private $dbh;
 
-    $logger->info("Chargement des fichiers json de species");
+    /** Holds the table name. */
+    private $table;
 
-    // First, drop species table
-    dropTable($logger, $dbh, "species");
-    $obsDropped = true;
+    /** Holds the file storage directory. */
+    private $fileStore;
 
-    // Loop on dowloaded files
-    for ($fic = $fileMin; $fic < $fileMax; $fic++) {
-        if (file_exists(
-            getenv('HOME') . '/' . $options['file_store'] .
-            "/species_" . $fic . ".json"
-        )) {
-            $logger->info(
-                _("Lecture du fichier ") . getenv('HOME') . '/' . $options['file_store'] .
-                "/species_" . $fic . ".json"
-            );
-            // Analyse du fichier
-            $response = file_get_contents(getenv('HOME') . '/' . $options['file_store'] . "/species_" . $fic . ".json");
+    /** Constructor stores parameters. */
+    public function __construct($dbh, $table, $fileStore)
+    {
+        $this->log = Logger::getLogger(__CLASS__);
+        $this->dbh = $dbh;
+        $this->table = $table;
+        $this->fileStore = $fileStore;
+    }
 
-            $logger->trace(_("Début de l'analyse des species"));
-            $data = json_decode($response, true);
+    /**
+     * Loop on json files and store in database.
+     *
+     * @return void
+     * @author Daniel Thonon
+     *
+     */
 
-            // Create table on first loop
-            if ($fic == 1) {
-                $ddlNT = createTable($logger, $data["data"], $dbh, "species");
+    public function store()
+    {
+        $dba = new DbAccess($this->dbh, $this->table);
+
+        $ddlNT = array(); // List of columns, kept across files
+        $fileMin = 1;    // min file for debug
+        $fileMax = 1000; // max file for debug
+
+        $this->log->info(_("Chargement des fichiers json de ") . $this->table);
+
+        // First, drop places table
+        $dba->dropTable();
+        $obsDropped = true;
+
+        // Loop on dowloaded files
+        for ($fic = $fileMin; $fic < $fileMax; $fic++) {
+            if (file_exists(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json')) {
+                $this->log->info(_("Lecture du fichier ") . getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
+                // Analyse du fichier
+                $response = file_get_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
+
+                $this->log->trace(_("Début de l'analyse des " . $this->table));
+                $data = json_decode($response, true);
+
+                // Create table on first loop
+                if ($fic == 1) {
+                    $ddlNT = $dba->createTable($data["data"]);
+                }
+                // Insert rows
+                $ddlNT = $dba->insertRows($data["data"], $ddlNT);
             }
-            // Insert rows
-            $ddlNT = insertRows($logger, $data["data"], $dbh, "species", $ddlNT);
         }
     }
+
 }
 
 /**
@@ -326,633 +299,632 @@ function species($dbh)
  * @author Daniel Thonon
  *
  */
-function bDate($data, &$obs, $suffix)
-{
-    global $logger;
-    $logger->trace("  " . $suffix . "date => " . $data["@ISO8601"]);
-    $obs[$suffix . "date"] = $data["@ISO8601"];
-}
+ class ObsParser {
 
-function bSpecies($data, &$obs)
-{
-    global $logger;
-    $logger->trace("  species_id => " . $data["@id"]);
-    $obs["id_species"] = $data["@id"];
-    $logger->trace("  species_name => " . $data["name"]);
-    $obs["name_species"] = $data["name"];
-    $logger->trace("  species_latin_name => " . $data["latin_name"]);
-    $obs["latin_species"] = $data["latin_name"];
-}
+     /** Holds the Logger. */
+     private $log;
 
-function bPlace($data, &$obs)
-{
-    global $logger;
-    $logger->trace("  id_place => " . $data["@id"]);
-    $obs["id_place"] = $data["@id"];
-    $logger->trace("  place => " . $data["name"]);
-    $obs["place"] = $data["name"];
-    $logger->trace("  municipality => " . $data["municipality"]);
-    $obs["municipality"] = $data["municipality"];
-    $logger->trace("  insee => " . $data["insee"]);
-    $obs["insee"] = $data["insee"];
-    $logger->trace("  county => " . $data["county"]);
-    $obs["county"] = $data["county"];
-    $logger->trace("  country => " . $data["country"]);
-    $obs["country"] = $data["country"];
-    $logger->trace("  altitude => " . $data["altitude"]);
-    $obs["altitude"] = $data["altitude"];
-    $logger->trace("  coord_lat => " . $data["coord_lat"]);
-    $obs["place_coord_lat"] = $data["coord_lat"];
-    $logger->trace("  coord_lon => " . $data["coord_lon"]);
-    $obs["place_coord_lon"] = $data["coord_lon"];
-    $logger->trace("  loc_precision => " . $data["loc_precision"]);
-    $obs["loc_precision"] = $data["loc_precision"];
-    $logger->trace("  place_type => " . $data["place_type"]);
-    $obs["place_type"] = $data["place_type"];
-}
+     /** Holds the dh accessor. */
+     private $dba;
 
-function bExtendedInfoMortality($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "cause":
-                $logger->trace("    " . $suffix . "cause => " . $value);
-                $obs[$suffix . "cause"] = $value;
-                break;
-            case "time_found":
-                $logger->trace("    " . $suffix . "time_found => " . $value);
-                $obs[$suffix . "time_found"] = $value;
-                break;
-            case "comment":
-                $logger->trace("    " . $suffix . "comment => " . $value);
-                $obs[$suffix . "comment"] = $value;
-                break;
-            case "electric_cause":
-                $logger->trace("    " . $suffix . "electric_cause => " . $value);
-                $obs[$suffix . "electric_cause"] = $value;
-                break;
-            case "trap":
-                $logger->trace("    " . $suffix . "trap => " . $value);
-                $obs[$suffix . "trap"] = $value;
-                break;
-            case "trap_circonstances":
-                $logger->trace("    " . $suffix . "trap_circonstances => " . $value);
-                $obs[$suffix . "trap_circonstances"] = $value;
-                break;
-            case "capture":
-                $logger->trace("    " . $suffix . "capture => " . $value);
-                $obs[$suffix . "capture"] = $value;
-                break;
-            case "electric_line_type":
-                $logger->trace("    " . $suffix . "electric_line_type => " . $value);
-                $obs[$suffix . "electric_line_type"] = $value;
-                break;
-            case "electric_line_configuration":
-                $logger->trace("    " . $suffix . "electric_line_configuration => " . $value);
-                $obs[$suffix . "electric_line_configuration"] = $value;
-                break;
-            case "electric_line_configuration_neutralised":
-                $logger->trace("    " . $suffix . "electric_line_configuration_neutralised => " . $value);
-                $obs[$suffix . "electric_line_configuration_neutralised"] = $value;
-                break;
-            case "electric_hta_pylon_id":
-                $logger->trace("    " . $suffix . "electric_hta_pylon_id => " . $value);
-                $obs[$suffix . "electric_hta_pylon_id"] = $value;
-                break;
-            case "fishing_collected":
-                $logger->trace("    " . $suffix . "fishing_collected => " . $value);
-                $obs[$suffix . "fishing_collected"] = $value;
-                break;
-            case "fishing_condition":
-                $logger->trace("    " . $suffix . "fishing_condition => " . $value);
-                $obs[$suffix . "fishing_condition"] = $value;
-                break;
-            case "fishing_mark":
-                $logger->trace("    " . $suffix . "fishing_mark => " . $value);
-                $obs[$suffix . "fishing_mark"] = $value;
-                break;
-            case "fishing_foreign_body":
-                $logger->trace("    " . $suffix . "fishing_foreign_body => " . $value);
-                $obs[$suffix . "fishing_foreign_body"] = $value;
-                break;
-            case "recipient":
-                $logger->trace("    " . $suffix . "recipient => " . $value);
-                $obs[$suffix . "recipient"] = $value;
-                break;
-            case "radio":
-                $logger->trace("    " . $suffix . "radio => " . $value);
-                $obs[$suffix . "radio"] = $value;
-                break;
-            case "collision_road_type":
-                $logger->trace("    " . $suffix . "collision_road_type => " . $value);
-                $obs[$suffix . "collision_road_type"] = $value;
-                break;
-            case "collision_track_id":
-                $logger->trace("    " . $suffix . "collision_track_id => " . $value);
-                $obs[$suffix . "collision_track_id"] = $value;
-                break;
-            case "collision_km_point":
-                $logger->trace("    " . $suffix . "collision_km_point => " . $value);
-                $obs[$suffix . "collision_km_point"] = $value;
-                break;
-            case "collision_near_element":
-                $logger->trace("    " . $suffix . "collision_near_element => " . $value);
-                $obs[$suffix . "collision_near_element"] = $value;
-                break;
-            case "predation":
-                $logger->trace("    " . $suffix . "predation => " . $value);
-                $obs[$suffix . "predation"] = $value;
-                break;
-            case "response":
-                $logger->trace("    " . $suffix . "response => " . $value);
-                $obs[$suffix . "response"] = $value;
-                break;
-            case "poison":
-                $logger->trace("    " . $suffix . "poison => " . $value);
-                $obs[$suffix . "poison"] = $value;
-                break;
-            case "pollution":
-                $logger->trace("    " . $suffix . "pollution => " . $value);
-                $obs[$suffix . "pollution"] = $value;
-                break;
-            default:
-                $logger->warn(_("    Elément extended_info_mortality inconnu : ") . $key);
-        }
-    }
-}
+     /** Constructor stores parameters. */
+     public function __construct($dba)
+     {
+         $this->log = Logger::getLogger(__CLASS__);
+         $this->dba = $dba;
+     }
 
-function bExtendedInfoBeardedVulture($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $logger->trace("    " . $suffix . "data => " . print_r($data, true));
-    return(print_r($data, true));
-}
+     private function bDate($data, &$obs, $suffix)
+     {
+         $this->log->trace("  " . $suffix . "date => " . $data["@ISO8601"]);
+         $obs[$suffix . "date"] = $data["@ISO8601"];
+     }
 
-function bExtendedInfoBeardedVultures($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $beardedVulture = "";
-    foreach ($data as $key => $value) {
-        $beardedVulture = $beardedVulture . bExtendedInfoBeardedVulture($value, $obs, $suffix . $key . "_");
-    }
-    $obs[$suffix . "data"] = $beardedVulture;
-}
+     private function bSpecies($data, &$obs)
+     {
+         $this->log->trace("  species_id => " . $data["@id"]);
+         $obs["id_species"] = $data["@id"];
+         $this->log->trace("  species_name => " . $data["name"]);
+         $obs["name_species"] = $data["name"];
+         $this->log->trace("  species_latin_name => " . $data["latin_name"]);
+         $obs["latin_species"] = $data["latin_name"];
+     }
 
-function bExtendedInfoColony($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "nests":
-                $logger->trace("    " . $suffix . "nests => " . $value);
-                $obs[$suffix . "nests"] = $value;
-                break;
-            case "occupied_nests":
-                $logger->trace("    " . $suffix . "occupied_nests => " . $value);
-                $obs[$suffix . "occupied_nests"] = $value;
-                break;
-            case "nests_is_min":
-                $logger->trace("    " . $suffix . "nests_is_min => " . $value);
-                $obs[$suffix . "nests_is_min"] = $value;
-                break;
-            case "nests_is_max":
-                $logger->trace("    " . $suffix . "nests_is_max => " . $value);
-                $obs[$suffix . "nests_is_max"] = $value;
-                break;
-            case "couples":
-                $logger->trace("    " . $suffix . "couples => " . $value);
-                $obs[$suffix . "couples"] = $value;
-                break;
-            default:
-                $logger->warn(_("    Elément extended_info_colony inconnu : ") . $key);
-        }
-    }
-}
+     private function bPlace($data, &$obs)
+     {
+         $this->log->trace("  id_place => " . $data["@id"]);
+         $obs["id_place"] = $data["@id"];
+         $this->log->trace("  place => " . $data["name"]);
+         $obs["place"] = $data["name"];
+         $this->log->trace("  municipality => " . $data["municipality"]);
+         $obs["municipality"] = $data["municipality"];
+         $this->log->trace("  insee => " . $data["insee"]);
+         $obs["insee"] = $data["insee"];
+         $this->log->trace("  county => " . $data["county"]);
+         $obs["county"] = $data["county"];
+         $this->log->trace("  country => " . $data["country"]);
+         $obs["country"] = $data["country"];
+         $this->log->trace("  altitude => " . $data["altitude"]);
+         $obs["altitude"] = $data["altitude"];
+         $this->log->trace("  coord_lat => " . $data["coord_lat"]);
+         $obs["place_coord_lat"] = $data["coord_lat"];
+         $this->log->trace("  coord_lon => " . $data["coord_lon"]);
+         $obs["place_coord_lon"] = $data["coord_lon"];
+         $this->log->trace("  loc_precision => " . $data["loc_precision"]);
+         $obs["loc_precision"] = $data["loc_precision"];
+         $this->log->trace("  place_type => " . $data["place_type"]);
+         $obs["place_type"] = $data["place_type"];
+     }
 
-function bExtendedInfoColonyExtended($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $colonyExtended = "(";
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "couples":
-                $logger->trace("    " . $suffix . "couples => " . $value);
-                $colonyExtended = $colonyExtended . ",couples=" . $value;
-                break;
-            case "nests":
-                $logger->trace("    " . $suffix . "nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nests" . $value;
-                break;
-            case "nests_is_min":
-                $logger->trace("    " . $suffix . "nests_is_min => " . $value);
-                $colonyExtended = $colonyExtended . ",nests_is_min" . $value;
-                break;
-            case "nests_is_max":
-                $logger->trace("    " . $suffix . "nests_is_max => " . $value);
-                $colonyExtended = $colonyExtended . ",nests_is_max" . $value;
-                break;
-            case "occupied_nests":
-                $logger->trace("    " . $suffix . "occupied_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",occupied_nests" . $value;
-                break;
-            case "nb_natural_nests":
-                $logger->trace("    " . $suffix . "nb_natural_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_natural_nests=" . $value;
-                break;
-            case "nb_natural_nests_is_min":
-                $logger->trace("    " . $suffix . "nb_natural_nests_is_min => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_natural_nests_is_min" . $value;
-                break;
-            case "nb_natural_nests_is_max":
-                $logger->trace("    " . $suffix . "nb_natural_nests_is_max => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_natural_nests_is_max" . $value;
-                break;
-            case "nb_natural_occup_nests":
-                $logger->trace("    " . $suffix . "nb_natural_occup_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_natural_nests=" . $value;
-                break;
-            case "nb_natural_other_species_nests":
-                $logger->trace("    " . $suffix . "nb_natural_other_species_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_natural_other_species_nests=" . $value;
-                break;
-            case "nb_natural_destructed_nests":
-                $logger->trace("    " . $suffix . "nb_natural_destructed_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_natural_destructed_nests=" . $value;
-                break;
-            case "nb_artificial_nests":
-                $logger->trace("    " . $suffix . "nb_artificial_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_artificial_nests=" . $value;
-                break;
-            case "nb_artificial_nests_is_min":
-                $logger->trace("    " . $suffix . "nb_artificial_nests_is_min => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_artificial_nests_is_min=" . $value;
-                break;
-            case "nb_artificial_nests_is_max":
-                $logger->trace("    " . $suffix . "nb_artificial_nests_is_max => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_artificial_nests_is_max=" . $value;
-                break;
-            case "nb_artificial_occup_nests":
-                $logger->trace("    " . $suffix . "nb_artificial_occup_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_artificial_occup_nests=" . $value;
-                break;
-            case "nb_artificial_other_species_nests":
-                $logger->trace("    " . $suffix . "nb_artificial_other_species_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_artificial_other_species_nests=" . $value;
-                break;
-            case "nb_artificial_destructed_nests":
-                $logger->trace("    " . $suffix . "nb_artificial_destructed_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_artificial_destructed_nests=" . $value;
-                break;
-            case "nb_construction_nests":
-                $logger->trace("    " . $suffix . "nb_construction_nests => " . $value);
-                $colonyExtended = $colonyExtended . ",nb_construction_nests=" . $value;
-                break;
-            default:
-                $logger->warn(_("    Elément extended_info_colony_extended inconnu : ") . $key);
-        }
-    }
-    return $colonyExtended . ")";
-}
+     private function bExtendedInfoMortality($data, &$obs, $suffix)
+     {
+         reset($data);
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "cause":
+                     $this->log->trace("    " . $suffix . "cause => " . $value);
+                     $obs[$suffix . "cause"] = $value;
+                     break;
+                 case "time_found":
+                     $this->log->trace("    " . $suffix . "time_found => " . $value);
+                     $obs[$suffix . "time_found"] = $value;
+                     break;
+                 case "comment":
+                     $this->log->trace("    " . $suffix . "comment => " . $value);
+                     $obs[$suffix . "comment"] = $value;
+                     break;
+                 case "electric_cause":
+                     $this->log->trace("    " . $suffix . "electric_cause => " . $value);
+                     $obs[$suffix . "electric_cause"] = $value;
+                     break;
+                 case "trap":
+                     $this->log->trace("    " . $suffix . "trap => " . $value);
+                     $obs[$suffix . "trap"] = $value;
+                     break;
+                 case "trap_circonstances":
+                     $this->log->trace("    " . $suffix . "trap_circonstances => " . $value);
+                     $obs[$suffix . "trap_circonstances"] = $value;
+                     break;
+                 case "capture":
+                     $this->log->trace("    " . $suffix . "capture => " . $value);
+                     $obs[$suffix . "capture"] = $value;
+                     break;
+                 case "electric_line_type":
+                     $this->log->trace("    " . $suffix . "electric_line_type => " . $value);
+                     $obs[$suffix . "electric_line_type"] = $value;
+                     break;
+                 case "electric_line_configuration":
+                     $this->log->trace("    " . $suffix . "electric_line_configuration => " . $value);
+                     $obs[$suffix . "electric_line_configuration"] = $value;
+                     break;
+                 case "electric_line_configuration_neutralised":
+                     $this->log->trace("    " . $suffix . "electric_line_configuration_neutralised => " . $value);
+                     $obs[$suffix . "electric_line_configuration_neutralised"] = $value;
+                     break;
+                 case "electric_hta_pylon_id":
+                     $this->log->trace("    " . $suffix . "electric_hta_pylon_id => " . $value);
+                     $obs[$suffix . "electric_hta_pylon_id"] = $value;
+                     break;
+                 case "fishing_collected":
+                     $this->log->trace("    " . $suffix . "fishing_collected => " . $value);
+                     $obs[$suffix . "fishing_collected"] = $value;
+                     break;
+                 case "fishing_condition":
+                     $this->log->trace("    " . $suffix . "fishing_condition => " . $value);
+                     $obs[$suffix . "fishing_condition"] = $value;
+                     break;
+                 case "fishing_mark":
+                     $this->log->trace("    " . $suffix . "fishing_mark => " . $value);
+                     $obs[$suffix . "fishing_mark"] = $value;
+                     break;
+                 case "fishing_foreign_body":
+                     $this->log->trace("    " . $suffix . "fishing_foreign_body => " . $value);
+                     $obs[$suffix . "fishing_foreign_body"] = $value;
+                     break;
+                 case "recipient":
+                     $this->log->trace("    " . $suffix . "recipient => " . $value);
+                     $obs[$suffix . "recipient"] = $value;
+                     break;
+                 case "radio":
+                     $this->log->trace("    " . $suffix . "radio => " . $value);
+                     $obs[$suffix . "radio"] = $value;
+                     break;
+                 case "collision_road_type":
+                     $this->log->trace("    " . $suffix . "collision_road_type => " . $value);
+                     $obs[$suffix . "collision_road_type"] = $value;
+                     break;
+                 case "collision_track_id":
+                     $this->log->trace("    " . $suffix . "collision_track_id => " . $value);
+                     $obs[$suffix . "collision_track_id"] = $value;
+                     break;
+                 case "collision_km_point":
+                     $this->log->trace("    " . $suffix . "collision_km_point => " . $value);
+                     $obs[$suffix . "collision_km_point"] = $value;
+                     break;
+                 case "collision_near_element":
+                     $this->log->trace("    " . $suffix . "collision_near_element => " . $value);
+                     $obs[$suffix . "collision_near_element"] = $value;
+                     break;
+                 case "predation":
+                     $this->log->trace("    " . $suffix . "predation => " . $value);
+                     $obs[$suffix . "predation"] = $value;
+                     break;
+                 case "response":
+                     $this->log->trace("    " . $suffix . "response => " . $value);
+                     $obs[$suffix . "response"] = $value;
+                     break;
+                 case "poison":
+                     $this->log->trace("    " . $suffix . "poison => " . $value);
+                     $obs[$suffix . "poison"] = $value;
+                     break;
+                 case "pollution":
+                     $this->log->trace("    " . $suffix . "pollution => " . $value);
+                     $obs[$suffix . "pollution"] = $value;
+                     break;
+                 default:
+                     $this->log->warn(_("    Elément extended_info_mortality inconnu : ") . $key);
+             }
+         }
+     }
 
-function bExtendedInfos($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $colonyExtended = $suffix . ":";
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "mortality":
-                $logger->trace("    " . $suffix . "mortality =>");
-                bExtendedInfoMortality($value, $obs, $suffix . $key . "_");
-                break;
-            case "gypaetus_barbatus":
-                $logger->trace("    " . $suffix . "gypaetus_barbatus =>");
-                bExtendedInfoBeardedVultures($value, $obs, $suffix . $key . "_");
-                break;
-            case "colony":
-                $logger->trace("    " . $suffix . "colony =>");
-                bExtendedInfoColony($value, $obs, $suffix . $key . "_");
-                break;
-            case "colony_extended":
-                $logger->trace("    " . $suffix . "colony_extended => ");
-                foreach ($data as $key => $value) {
-                    $colonyExtended = $colonyExtended . bExtendedInfoColonyExtended($value, $obs, "");
-                }
-                $obs[$suffix . "colony_extended_list"] = $colonyExtended;
-                break;
-            default:
-                $logger->warn(_("    Elément extended_infos inconnu : ") . $key);
-        }
-    }
-}
+     private function bExtendedInfoBeardedVulture($data, &$obs, $suffix)
+     {
+         reset($data);
+         $this->log->trace("    " . $suffix . "data => " . print_r($data, true));
+         return(print_r($data, true));
+     }
 
-function bSousDetail($data, $obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $sousDetail = $suffix . ":";
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "@id":
-                $logger->trace("    " . $suffix . "cause => " . $value);
-                $sousDetail = "id=" . $value;
-                break;
-            case "#text":
-                $logger->trace("    " . $suffix . "cause => " . $value);
-                $sousDetail = "text=" .  $value;
-                break;
-        }
-    }
-    return $sousDetail;
-}
+     private function bExtendedInfoBeardedVultures($data, &$obs, $suffix)
+     {
+         reset($data);
+         $beardedVulture = "";
+         foreach ($data as $key => $value) {
+             $beardedVulture = $beardedVulture . $this->bExtendedInfoBeardedVulture($value, $obs, $suffix . $key . "_");
+         }
+         $obs[$suffix . "data"] = $beardedVulture;
+     }
 
-function bDetail($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $detail = "(";
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "count":
-                $logger->trace("  " . $suffix . "count => " . $value);
-                $detail = $detail. ",count=" . $value;
-                break;
-            case "age":
-                $logger->trace("  " . $suffix . "age => " . $value["@id"]);
-                $detail = $detail. ",age=" .  $value["@id"];
-                break;
-            case "sex":
-                $logger->trace("  " . $suffix . "sex => " . $value["@id"]);
-                $detail = $detail. ",sex=" .  $value["@id"];
-                break;
-            case "condition":
-                $logger->trace("  " . $suffix . "condition => " . $value["@id"]);
-                $detail = $detail. ",condition=" .  $value["@id"];
-                break;
-            case "distance":
-                $detail = $detail. ",distance=" . bSousDetail($value, $obs, $suffix . $key . "_");
-                break;
-            default:
-                $logger->warn(_("  Elément detail inconnu : ") . $key . " => " . print_r($value, true));
-        }
-    }
-    return $detail . ")";
-}
+     private function bExtendedInfoColony($data, &$obs, $suffix)
+     {
+         reset($data);
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "nests":
+                     $this->log->trace("    " . $suffix . "nests => " . $value);
+                     $obs[$suffix . "nests"] = $value;
+                     break;
+                 case "occupied_nests":
+                     $this->log->trace("    " . $suffix . "occupied_nests => " . $value);
+                     $obs[$suffix . "occupied_nests"] = $value;
+                     break;
+                 case "nests_is_min":
+                     $this->log->trace("    " . $suffix . "nests_is_min => " . $value);
+                     $obs[$suffix . "nests_is_min"] = $value;
+                     break;
+                 case "nests_is_max":
+                     $this->log->trace("    " . $suffix . "nests_is_max => " . $value);
+                     $obs[$suffix . "nests_is_max"] = $value;
+                     break;
+                 case "couples":
+                     $this->log->trace("    " . $suffix . "couples => " . $value);
+                     $obs[$suffix . "couples"] = $value;
+                     break;
+                 default:
+                     $this->log->warn(_("    Elément extended_info_colony inconnu : ") . $key);
+             }
+         }
+     }
 
-function bDetails($data, &$obs, $suffix)
-{
-    global $logger;
-    reset($data);
-    $details = "";
-    foreach ($data as $key => $value) {
-        $details = $details . bDetail($value, $obs, "");
-    }
-    $obs[$suffix . "list"] = $details;
-}
+     private function bExtendedInfoColonyExtended($data, &$obs, $suffix)
+     {
+         reset($data);
+         $colonyExtended = "(";
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "couples":
+                     $this->log->trace("    " . $suffix . "couples => " . $value);
+                     $colonyExtended = $colonyExtended . ",couples=" . $value;
+                     break;
+                 case "nests":
+                     $this->log->trace("    " . $suffix . "nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nests" . $value;
+                     break;
+                 case "nests_is_min":
+                     $this->log->trace("    " . $suffix . "nests_is_min => " . $value);
+                     $colonyExtended = $colonyExtended . ",nests_is_min" . $value;
+                     break;
+                 case "nests_is_max":
+                     $this->log->trace("    " . $suffix . "nests_is_max => " . $value);
+                     $colonyExtended = $colonyExtended . ",nests_is_max" . $value;
+                     break;
+                 case "occupied_nests":
+                     $this->log->trace("    " . $suffix . "occupied_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",occupied_nests" . $value;
+                     break;
+                 case "nb_natural_nests":
+                     $this->log->trace("    " . $suffix . "nb_natural_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_natural_nests=" . $value;
+                     break;
+                 case "nb_natural_nests_is_min":
+                     $this->log->trace("    " . $suffix . "nb_natural_nests_is_min => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_natural_nests_is_min" . $value;
+                     break;
+                 case "nb_natural_nests_is_max":
+                     $this->log->trace("    " . $suffix . "nb_natural_nests_is_max => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_natural_nests_is_max" . $value;
+                     break;
+                 case "nb_natural_occup_nests":
+                     $this->log->trace("    " . $suffix . "nb_natural_occup_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_natural_nests=" . $value;
+                     break;
+                 case "nb_natural_other_species_nests":
+                     $this->log->trace("    " . $suffix . "nb_natural_other_species_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_natural_other_species_nests=" . $value;
+                     break;
+                 case "nb_natural_destructed_nests":
+                     $this->log->trace("    " . $suffix . "nb_natural_destructed_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_natural_destructed_nests=" . $value;
+                     break;
+                 case "nb_artificial_nests":
+                     $this->log->trace("    " . $suffix . "nb_artificial_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_artificial_nests=" . $value;
+                     break;
+                 case "nb_artificial_nests_is_min":
+                     $this->log->trace("    " . $suffix . "nb_artificial_nests_is_min => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_artificial_nests_is_min=" . $value;
+                     break;
+                 case "nb_artificial_nests_is_max":
+                     $this->log->trace("    " . $suffix . "nb_artificial_nests_is_max => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_artificial_nests_is_max=" . $value;
+                     break;
+                 case "nb_artificial_occup_nests":
+                     $this->log->trace("    " . $suffix . "nb_artificial_occup_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_artificial_occup_nests=" . $value;
+                     break;
+                 case "nb_artificial_other_species_nests":
+                     $this->log->trace("    " . $suffix . "nb_artificial_other_species_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_artificial_other_species_nests=" . $value;
+                     break;
+                 case "nb_artificial_destructed_nests":
+                     $this->log->trace("    " . $suffix . "nb_artificial_destructed_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_artificial_destructed_nests=" . $value;
+                     break;
+                 case "nb_construction_nests":
+                     $this->log->trace("    " . $suffix . "nb_construction_nests => " . $value);
+                     $colonyExtended = $colonyExtended . ",nb_construction_nests=" . $value;
+                     break;
+                 default:
+                     $this->log->warn(_("    Elément extended_info_colony_extended inconnu : ") . $key);
+             }
+         }
+         return $colonyExtended . ")";
+     }
 
-function bObserver($data, &$obs)
-{
-    global $logger;
-    reset($data);
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "@id":
-                $logger->trace("  id_observer => " . $data["@id"]);
-                $obs["id_observer"] = $data["@id"];
-                break;
-            case "name":
-                $logger->trace("  name => " . $data["name"]);
-                $obs["name"] = $data["name"];
-                break;
-            case "id_sighting":
-                $logger->trace("  id_sighting => " . $data["id_sighting"]);
-                $obs["id_sighting"] = $data["id_sighting"];
-                break;
-            case "id_form":
-                $logger->trace("  id_form => " . $data["@id"]);
-                $obs["id_form"] = $data["@id"];
-                break;
-            case "coord_lat":
-                $logger->trace("  coord_lat => " . $data["coord_lat"]);
-                $obs["observer_coord_lat"] = $data["coord_lat"];
-                break;
-            case "coord_lon":
-                $logger->trace("  coord_lon => " . $data["coord_lon"]);
-                $obs["observer_coord_lon"] = $data["coord_lon"];
-                break;
-            case "altitude":
-                $logger->trace("  altitude => " . $data["altitude"]);
-                $obs["altitude"] = $data["altitude"];
-                break;
-            case "precision":
-                $logger->trace("  precision => " . $data["precision"]);
-                $obs["precision"] = $data["precision"];
-                break;
-            case "atlas_grid_name":
-                $logger->trace("  atlas_grid_name => " . $data["atlas_grid_name"]);
-                $obs["atlas_grid_name"] = $data["atlas_grid_name"];
-                break;
-            case "atlas_code":
-                bSousDetail($value, $obs, "atlas_code_");
-                break;
-            case "behaviours":
-                bSousDetail($value[0], $obs, "behaviours_");
-                break;
-            case "count":
-                $logger->trace("  count => " . $data["count"]);
-                $obs["count"] = $data["count"];
-                break;
-            case "count_string":
-                $logger->trace("  count_string => " . $data["count_string"]);
-                $obs["count_string"] = $data["count_string"];
-                break;
-            case "estimation_code":
-                $logger->trace("  estimation_code => " . $data["estimation_code"]);
-                $obs["estimation_code"] = $data["estimation_code"];
-                break;
-            case "flight_number":
-                $logger->trace("  flight_number => " . $data["flight_number"]);
-                $obs["flight_number"] = $data["flight_number"];
-                break;
-            case "has_death":
-                $logger->trace("  has_death => " . $data["has_death"]);
-                $obs["has_death"] = $data["has_death"];
-                break;
-            case "project_code":
-                $logger->trace("  project_code => " . $data["project_code"]);
-                $obs["project_code"] = $data["project_code"];
-                break;
-            case "admin_hidden":
-                $logger->trace("  admin_hidden => " . $data["admin_hidden"]);
-                $obs["admin_hidden"] = $data["admin_hidden"];
-                break;
-            case "admin_hidden_type":
-                $logger->trace("  admin_hidden_type => " . $data["admin_hidden_type"]);
-                $obs["admin_hidden_type"] = $data["admin_hidden_type"];
-                break;
-            case "hidden":
-                $logger->trace("  hidden => " . $data["hidden"]);
-                $obs["hidden"] = $data["hidden"];
-                break;
-            case "comment":
-                $logger->trace("  comment => " . $data["comment"]);
-                $obs["comment"] = $data["comment"];
-                break;
-            case "hidden_comment":
-                $logger->trace("  hidden_comment => " . $data["hidden_comment"]);
-                $obs["hidden_comment"] = $data["hidden_comment"];
-                break;
-            case "entity":
-                $logger->trace("  entity => " . $data["entity"]);
-                $obs["entity"] = $data["entity"];
-                break;
-            case "entity_fullname":
-                $logger->trace("  entity_fullname => " . $data["entity_fullname"]);
-                $obs["entity_fullname"] = $data["entity_fullname"];
-                break;
-            case "project":
-                $logger->trace("  project => " . $data["project"]);
-                $obs["project"] = $data["project"];
-                break;
-            case "insert_date":
-                bDate($value, $obs, "insert_");
-                break;
-            case "update_date":
-                bDate($value, $obs, "update_");
-                break;
-            case "export_date":
-                bDate($value, $obs, "export_");
-                break;
-            case "timing":
-                bDate($value, $obs, "timing_");
-                break;
-            case "extended_info":
-                bExtendedInfos($value, $obs, "extended_info_");
-                break;
-            case "details":
-                bDetails($value, $obs, "details_");
-                break;
-            case "medias":
-                $logger->trace("  medias non implemented");
-                break;
-            case "@uid":
-                $logger->trace("  @uid non implemented");
-                break;
-            case "id_universal":
-                $logger->trace("  id_universal non implemented");
-                break;
-            default:
-                $logger->warn(_("  Elément observer inconnu : ") . $key . " => " . print_r($value, true));
-        }
-    }
-}
+     private function bExtendedInfos($data, &$obs, $suffix)
+     {
+         reset($data);
+         $colonyExtended = $suffix . ":";
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "mortality":
+                     $this->log->trace("    " . $suffix . "mortality =>");
+                     $this->bExtendedInfoMortality($value, $obs, $suffix . $key . "_");
+                     break;
+                 case "gypaetus_barbatus":
+                     $this->log->trace("    " . $suffix . "gypaetus_barbatus =>");
+                     $this->bExtendedInfoBeardedVultures($value, $obs, $suffix . $key . "_");
+                     break;
+                 case "colony":
+                     $this->log->trace("    " . $suffix . "colony =>");
+                     $this->bExtendedInfoColony($value, $obs, $suffix . $key . "_");
+                     break;
+                 case "colony_extended":
+                     $this->log->trace("    " . $suffix . "colony_extended => ");
+                     foreach ($data as $key => $value) {
+                         $colonyExtended = $colonyExtended . $this->bExtendedInfoColonyExtended($value, $obs, "");
+                     }
+                     $obs[$suffix . "colony_extended_list"] = $colonyExtended;
+                     break;
+                 default:
+                     $this->log->warn(_("    Elément extended_infos inconnu : ") . $key);
+             }
+         }
+     }
 
-function bObservers($data, &$obs)
-{
-    global $logger;
-    reset($data);
-    foreach ($data as $key => $value) {
-        bObserver($value, $obs);
-    }
-}
+     private function bSousDetail($data, $obs, $suffix)
+     {
+         reset($data);
+         $sousDetail = $suffix . ":";
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "@id":
+                     $this->log->trace("    " . $suffix . "cause => " . $value);
+                     $sousDetail = "id=" . $value;
+                     break;
+                 case "#text":
+                     $this->log->trace("    " . $suffix . "cause => " . $value);
+                     $sousDetail = "text=" .  $value;
+                     break;
+             }
+         }
+         return $sousDetail;
+     }
 
-function bSighting($data, &$obs)
-{
-    global $logger;
-    reset($data);
-    foreach ($data as $key => $value) {
-        switch ($key) {
-            case "date":
-                $logger->trace("Elément: " . $key);
-                bDate($value, $obs, "");
-                break;
-            case "species":
-                $logger->trace("Elément: " . $key);
-                bSpecies($value, $obs);
-                break;
-            case "place":
-                $logger->trace("Elément: " . $key);
-                bPlace($value, $obs);
-                break;
-            case "observers":
-                $logger->trace("Elément: " . $key);
-                bObservers($value, $obs);
-                break;
-            default:
-                $logger->warn(_("Elément sighting inconnu : ") . $key);
-        }
-    }
-    $logger->trace(print_r($obs, true));
-}
+     private function bDetail($data, &$obs, $suffix)
+     {
+         reset($data);
+         $detail = "(";
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "count":
+                     $this->log->trace("  " . $suffix . "count => " . $value);
+                     $detail = $detail. ",count=" . $value;
+                     break;
+                 case "age":
+                     $this->log->trace("  " . $suffix . "age => " . $value["@id"]);
+                     $detail = $detail. ",age=" .  $value["@id"];
+                     break;
+                 case "sex":
+                     $this->log->trace("  " . $suffix . "sex => " . $value["@id"]);
+                     $detail = $detail. ",sex=" .  $value["@id"];
+                     break;
+                 case "condition":
+                     $this->log->trace("  " . $suffix . "condition => " . $value["@id"]);
+                     $detail = $detail. ",condition=" .  $value["@id"];
+                     break;
+                 case "distance":
+                     $detail = $detail. ",distance=" . $this->bSousDetail($value, $obs, $suffix . $key . "_");
+                     break;
+                 default:
+                     $this->log->warn(_("  Elément detail inconnu : ") . $key . " => " . print_r($value, true));
+             }
+         }
+         return $detail . ")";
+     }
 
-function bSightings($data, $dbh, &$obsDropped, $ddlNT)
-{
-    global $logger;
-    $rowMin = 0; // starting record for debug
-    $rowMax = 1000000000; // ending record for debug
-    $nbRow = 0;
+     private function bDetails($data, &$obs, $suffix)
+     {
+         reset($data);
+         $details = "";
+         foreach ($data as $key => $value) {
+             $details = $details . $this->bDetail($value, $obs, "");
+         }
+         $obs[$suffix . "list"] = $details;
+     }
 
-    $obsArray = array(); // Store observations per row
-    reset($data);
+     private function bObserver($data, &$obs)
+     {
+         reset($data);
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "@id":
+                     $this->log->trace("  id_observer => " . $data["@id"]);
+                     $obs["id_observer"] = $data["@id"];
+                     break;
+                 case "name":
+                     $this->log->trace("  name => " . $data["name"]);
+                     $obs["name"] = $data["name"];
+                     break;
+                 case "id_sighting":
+                     $this->log->trace("  id_sighting => " . $data["id_sighting"]);
+                     $obs["id_sighting"] = $data["id_sighting"];
+                     break;
+                 case "id_form":
+                     $this->log->trace("  id_form => " . $data["@id"]);
+                     $obs["id_form"] = $data["@id"];
+                     break;
+                 case "coord_lat":
+                     $this->log->trace("  coord_lat => " . $data["coord_lat"]);
+                     $obs["observer_coord_lat"] = $data["coord_lat"];
+                     break;
+                 case "coord_lon":
+                     $this->log->trace("  coord_lon => " . $data["coord_lon"]);
+                     $obs["observer_coord_lon"] = $data["coord_lon"];
+                     break;
+                 case "altitude":
+                     $this->log->trace("  altitude => " . $data["altitude"]);
+                     $obs["altitude"] = $data["altitude"];
+                     break;
+                 case "precision":
+                     $this->log->trace("  precision => " . $data["precision"]);
+                     $obs["precision"] = $data["precision"];
+                     break;
+                 case "atlas_grid_name":
+                     $this->log->trace("  atlas_grid_name => " . $data["atlas_grid_name"]);
+                     $obs["atlas_grid_name"] = $data["atlas_grid_name"];
+                     break;
+                 case "atlas_code":
+                     $this->bSousDetail($value, $obs, "atlas_code_");
+                     break;
+                 case "behaviours":
+                     $this->bSousDetail($value[0], $obs, "behaviours_");
+                     break;
+                 case "count":
+                     $this->log->trace("  count => " . $data["count"]);
+                     $obs["count"] = $data["count"];
+                     break;
+                 case "count_string":
+                     $this->log->trace("  count_string => " . $data["count_string"]);
+                     $obs["count_string"] = $data["count_string"];
+                     break;
+                 case "estimation_code":
+                     $this->log->trace("  estimation_code => " . $data["estimation_code"]);
+                     $obs["estimation_code"] = $data["estimation_code"];
+                     break;
+                 case "flight_number":
+                     $this->log->trace("  flight_number => " . $data["flight_number"]);
+                     $obs["flight_number"] = $data["flight_number"];
+                     break;
+                 case "has_death":
+                     $this->log->trace("  has_death => " . $data["has_death"]);
+                     $obs["has_death"] = $data["has_death"];
+                     break;
+                 case "project_code":
+                     $this->log->trace("  project_code => " . $data["project_code"]);
+                     $obs["project_code"] = $data["project_code"];
+                     break;
+                 case "admin_hidden":
+                     $this->log->trace("  admin_hidden => " . $data["admin_hidden"]);
+                     $obs["admin_hidden"] = $data["admin_hidden"];
+                     break;
+                 case "admin_hidden_type":
+                     $this->log->trace("  admin_hidden_type => " . $data["admin_hidden_type"]);
+                     $obs["admin_hidden_type"] = $data["admin_hidden_type"];
+                     break;
+                 case "hidden":
+                     $this->log->trace("  hidden => " . $data["hidden"]);
+                     $obs["hidden"] = $data["hidden"];
+                     break;
+                 case "comment":
+                     $this->log->trace("  comment => " . $data["comment"]);
+                     $obs["comment"] = $data["comment"];
+                     break;
+                 case "hidden_comment":
+                     $this->log->trace("  hidden_comment => " . $data["hidden_comment"]);
+                     $obs["hidden_comment"] = $data["hidden_comment"];
+                     break;
+                 case "entity":
+                     $this->log->trace("  entity => " . $data["entity"]);
+                     $obs["entity"] = $data["entity"];
+                     break;
+                 case "entity_fullname":
+                     $this->log->trace("  entity_fullname => " . $data["entity_fullname"]);
+                     $obs["entity_fullname"] = $data["entity_fullname"];
+                     break;
+                 case "project":
+                     $this->log->trace("  project => " . $data["project"]);
+                     $obs["project"] = $data["project"];
+                     break;
+                 case "insert_date":
+                     $this->bDate($value, $obs, "insert_");
+                     break;
+                 case "update_date":
+                     $this->bDate($value, $obs, "update_");
+                     break;
+                 case "export_date":
+                     $this->bDate($value, $obs, "export_");
+                     break;
+                 case "timing":
+                     $this->bDate($value, $obs, "timing_");
+                     break;
+                 case "extended_info":
+                     $this->bExtendedInfos($value, $obs, "extended_info_");
+                     break;
+                 case "details":
+                     $this->bDetails($value, $obs, "details_");
+                     break;
+                 case "medias":
+                     $this->log->trace("  medias non implemented");
+                     break;
+                 case "@uid":
+                     $this->log->trace("  @uid non implemented");
+                     break;
+                 case "id_universal":
+                     $this->log->trace("  id_universal non implemented");
+                     break;
+                 default:
+                     $this->log->warn(_("  Elément observer inconnu : ") . $key . " => " . print_r($value, true));
+             }
+         }
+     }
 
-    $logger->trace(_("Analyse d'une observation"));
-    foreach ($data as $key => $value) {
-        $nbRow = $nbRow + 1;
-        if ($nbRow < $rowMin) {
-            continue;
-        }
-        $logger->trace(_("Elément sightings numéro : ") . $nbRow);
-        // $logger->debug(_("Elements : ") . print_r(array_keys($value, TRUE)));
-        $obs = array();
-        bSighting($value, $obs);
-        $obsArray[] = $obs;
-        if ($nbRow > $rowMax) {
-            break;
-        }
-    }
+     private function bObservers($data, &$obs)
+     {
+         reset($data);
+         foreach ($data as $key => $value) {
+             $this->bObserver($value, $obs);
+         }
+     }
 
-    // Create table on first pass and insert data, if sightings not empty
-    if ($nbRow > 0) {
-        if ($obsDropped) {
-            $ddlNT = createTable($logger, $obsArray, $dbh, "observations");
-            $obsDropped = false;
-        }
-        // Insert data
-        $ddlNT = insertRows($logger, $obsArray, $dbh, "observations", $ddlNT);
-    }
+     private function bSighting($data, &$obs)
+     {
+         reset($data);
+         foreach ($data as $key => $value) {
+             switch ($key) {
+                 case "date":
+                     $this->log->trace("Elément: " . $key);
+                     $this->bDate($value, $obs, "");
+                     break;
+                 case "species":
+                     $this->log->trace("Elément: " . $key);
+                     $this->bSpecies($value, $obs);
+                     break;
+                 case "place":
+                     $this->log->trace("Elément: " . $key);
+                     $this->bPlace($value, $obs);
+                     break;
+                 case "observers":
+                     $this->log->trace("Elément: " . $key);
+                     $this->bObservers($value, $obs);
+                     break;
+                 default:
+                     $this->log->warn(_("Elément sighting inconnu : ") . $key);
+             }
+         }
+         $this->log->trace(print_r($obs, true));
+     }
 
-    return($ddlNT);
-}
+     public function bSightings($data, $dbh, &$obsDropped, $ddlNT)
+     {
+         $rowMin = 0; // starting record for debug
+         $rowMax = 1000000000; // ending record for debug
+         $nbRow = 0;
 
-function bForms($data, $dbh, &$obsDropped, $ddlNT)
-{
-    global $logger;
-    $nbRow = 0;
-    reset($data);
+         $obsArray = array(); // Store observations per row
+         reset($data);
 
-    $logger->trace(_("Analyse d'un formulaire"));
-    foreach ($data as $key => $value) {
-        $nbRow = $nbRow + 1;
-        $logger->trace(_("Elément forms numéro : ") . $nbRow);
-        foreach ($value as $keyS => $valueS) {
-            switch ($keyS) {
-                case "sightings":
-                    $ddlNT = bSightings($valueS, $dbh, $obsDropped, $ddlNT);
-                    break;
-                default:
-                    $logger->trace(_("Element forms non traité : ") . $keyS);
-            }
-        }
-    }
+         $this->log->trace(_("Analyse d'une observation"));
+         foreach ($data as $key => $value) {
+             $nbRow = $nbRow + 1;
+             if ($nbRow < $rowMin) {
+                 continue;
+             }
+             $this->log->trace(_("Elément sightings numéro : ") . $nbRow);
+             // $this->log->debug(_("Elements : ") . print_r(array_keys($value, TRUE)));
+             $obs = array();
+             $this->bSighting($value, $obs);
+             $obsArray[] = $obs;
+             if ($nbRow > $rowMax) {
+                 break;
+             }
+         }
 
-    return($ddlNT);
-}
+         // Create table on first pass and insert data, if sightings not empty
+         if ($nbRow > 0) {
+             if ($obsDropped) {
+                 $ddlNT = $this->dba->createTable($obsArray);
+                 $obsDropped = false;
+             }
+             // Insert data
+             $ddlNT = $this->dba->insertRows($obsArray, $ddlNT);
+         }
+
+         return($ddlNT);
+     }
+
+     public function bForms($data, $dbh, &$obsDropped, $ddlNT)
+     {
+         $nbRow = 0;
+         reset($data);
+
+         $this->log->trace(_("Analyse d'un formulaire"));
+         foreach ($data as $key => $value) {
+             $nbRow = $nbRow + 1;
+             $this->log->trace(_("Elément forms numéro : ") . $nbRow);
+             foreach ($value as $keyS => $valueS) {
+                 switch ($keyS) {
+                     case "sightings":
+                         $ddlNT = $this->bSightings($valueS, $dbh, $obsDropped, $ddlNT);
+                         break;
+                     default:
+                         $this->log->trace(_("Element forms non traité : ") . $keyS);
+                 }
+             }
+         }
+
+         return($ddlNT);
+     }
+ }
 
 /**
  * Loop on json files and call parser on json structure to store in database
@@ -969,15 +941,19 @@ function observations($dbh)
     global $logger;
     global $options;
 
+    $dba = new DbAccess($dbh, "observations");
+
     $ddlNT = array(); // List of columns, kept across files
 
+    $parser = new ObsParser($dba);
+
     $fileMin = 1;    // min file for debug
-    $fileMax = 1000; // max file for debug
+    $fileMax = 30; // max file for debug
 
     $logger->info(_("Chargement des fichiers json d'observations"));
 
     // First, drop observations table
-    dropTable($logger, $dbh, "observations");
+    $dba->dropTable();
     $obsDropped = true;
 
     // Loop on dowloaded files
@@ -1014,10 +990,10 @@ function observations($dbh)
                     $logger->trace(_("Analyse de l'élement : ") . $key);
                     switch ($key) {
                         case "sightings":
-                            $ddlNT = bSightings($value, $dbh, $obsDropped, $ddlNT);
+                            $ddlNT = $parser->bSightings($value, $dbh, $obsDropped, $ddlNT);
                             break;
                         case "forms":
-                            $ddlNT = bForms($value, $dbh, $obsDropped, $ddlNT);
+                            $ddlNT = $parser->bForms($value, $dbh, $obsDropped, $ddlNT);
                             break;
                         default:
                             $logger->warn(_("Element racine inconnu: ") . $key);
@@ -1028,7 +1004,8 @@ function observations($dbh)
         }
     }
 }
-// ///////////////////////// Main ////////////////////////////////////
+
+///////////////////////// Main ////////////////////////////////////
 // Larger memory to handle observations
 ini_set('memory_limit', '1024M');
 
@@ -1080,11 +1057,33 @@ try {
     die();
 }
 
+// Store entities in database
+$places = new StoreFile($dbh, "entities", $options['file_store']);
+$places->store();
+
+// Store export_organizations in database
+$places = new StoreFile($dbh, "export_organizations", $options['file_store']);
+$places->store();
+
+// Store families in database
+$places = new StoreFile($dbh, "families", $options['file_store']);
+$places->store();
+
+// Store local_admin_units in database
+$places = new StoreFile($dbh, "local_admin_units", $options['file_store']);
+$places->store();
+
 // Store places in database
-places($dbh);
+$places = new StoreFile($dbh, "places", $options['file_store']);
+$places->store();
 
 // Store species in database
-species($dbh);
+$places = new StoreFile($dbh, "species", $options['file_store']);
+$places->store();
+
+// Store taxo_groups in database
+$places = new StoreFile($dbh, "taxo_groups", $options['file_store']);
+$places->store();
 
 // Store observations in database
 observations($dbh);
