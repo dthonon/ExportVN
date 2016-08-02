@@ -161,5 +161,11 @@ VACUUM ANALYZE species;
 -- Create indexes on taxo_groups table
 -- Primary key
 ALTER TABLE taxo_groups DROP CONSTRAINT IF EXISTS pk_taxo_groups;
-ALTER TABLE taxo_groups ADD CONSTRAINT pk_taxo_groupss PRIMARY KEY(id);
+ALTER TABLE taxo_groups ADD CONSTRAINT pk_taxo_groups PRIMARY KEY(id);
 VACUUM ANALYZE taxo_groups;
+
+-- Create indexes on territorial_units table
+-- Primary key
+ALTER TABLE territorial_units DROP CONSTRAINT IF EXISTS pk_territorial_units;
+ALTER TABLE territorial_units ADD CONSTRAINT pk_territorial_units PRIMARY KEY(id);
+VACUUM ANALYZE territorial_units;
