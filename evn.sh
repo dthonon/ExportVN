@@ -1,12 +1,13 @@
 #!/bin/bash
 #
-# Main shell to call the different Export PHP scripts
+# Main shell to call the different Export PHP scripts.
+#
 # Parameters:
 #     $1: type of action to perform:
 #          - config => Configure parameters for scripts (sites, passwords...).
-#          - download => Export from VisioNature fo json files, using API
-#          - load => Load json files in Postgresql
-#          - init => Prepare DB init script
+#          - init => Prepare DB init script.
+#          - download => Export from VisioNature fo json files, using API.
+#          - load => Load json files in Postgresql.
 #
 # Copyright (c) 2016, Daniel Thonon
 #  All rights reserved.

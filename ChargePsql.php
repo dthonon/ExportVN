@@ -36,9 +36,8 @@
 
 require_once 'log4php/Logger.php';
 
-// Create logger and set level
+// Configure root logger
 Logger::configure('config.xml');
-$logger = Logger::getRootLogger();
 
 /**
  * Provide access functions to the database.
@@ -1027,7 +1026,6 @@ $longOpts = array(
 $options = getopt($shortOpts, $longOpts);
 
 // Create logger and set level
-Logger::configure('config.xml');
 $logger = Logger::getRootLogger();
 $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 
