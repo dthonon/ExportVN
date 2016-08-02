@@ -144,7 +144,8 @@ case "$cmd" in
 			--logging=${config[evn_logging]}
 
 		echo "Finalisation de la base de données"
-		psql -f ChargePsql.sql "dbname=${config[evn_db_name]} options=--search_path=${config[evn_db_schema]},public"
+		env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
+            psql -q -d "dbname=${config[evn_db_name]}" -f ChargePsql.sql
 
 		echo "Fin du chargement à $(date)"
 

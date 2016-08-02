@@ -391,6 +391,6 @@ $territorial_units = new DownloadTable($options['site'], $options['user_email'],
 $territorial_units->download($oauth);
 unset($places);
 
-// // Download and store export observations
-// $logger->info(_("Téléchargement et stockage des 'observations'"));
-// storeObservations($logger, $options, $oauth);
+// Download and store export observations
+$logger->info(_("Téléchargement et stockage des 'observations'"));
+storeObservations($logger, $options, $oauth);

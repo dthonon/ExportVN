@@ -32,21 +32,31 @@
 -- Primary key
 ALTER TABLE entities DROP CONSTRAINT IF EXISTS pk_entities;
 ALTER TABLE entities ADD CONSTRAINT pk_entities PRIMARY KEY(id);
+VACUUM ANALYZE entities;
 
 -- Create indexes on export_organizations table
 -- Primary key
 ALTER TABLE export_organizations DROP CONSTRAINT IF EXISTS pk_export_organizations;
 ALTER TABLE export_organizations ADD CONSTRAINT pk_export_organizations PRIMARY KEY(id);
+VACUUM ANALYZE export_organizations;
 
 -- Create indexes on families table
 -- Primary key
 ALTER TABLE families DROP CONSTRAINT IF EXISTS pk_families;
 ALTER TABLE families ADD CONSTRAINT pk_families PRIMARY KEY(id);
+VACUUM ANALYZE families;
+
+-- Create indexes on grids table
+-- Primary key
+ALTER TABLE grids DROP CONSTRAINT IF EXISTS pk_grids;
+ALTER TABLE grids ADD CONSTRAINT pk_grids PRIMARY KEY(id);
+VACUUM ANALYZE grids;
 
 -- Create indexes on local_admin_units table
 -- Primary key
 ALTER TABLE local_admin_units DROP CONSTRAINT IF EXISTS pk_local_admin_units;
 ALTER TABLE local_admin_units ADD CONSTRAINT pk_local_admin_units PRIMARY KEY(id);
+VACUUM ANALYZE local_admin_units;
 
 -- Create indexes on observations table
 -- Primary key
@@ -58,7 +68,9 @@ DROP INDEX IF EXISTS idx_observations_geom_gist;
 ALTER TABLE observations DROP COLUMN IF EXISTS the_geom CASCADE;
 ALTER TABLE observations DROP COLUMN IF EXISTS coord_lon_l93 CASCADE;
 ALTER TABLE observations DROP COLUMN IF EXISTS coord_lat_l93 CASCADE;
+\o /dev/null
 SELECT AddGeometryColumn('observations', 'the_geom', 2154, 'POINT', 2);
+\o
 UPDATE observations SET the_geom = ST_Transform(ST_SetSRID(ST_MakePoint(observer_coord_lon, observer_coord_lat), 4326), 2154);
 CREATE INDEX idx_observations_geom_gist ON observations USING GIST (the_geom);
 ALTER TABLE observations ADD coord_lon_l93 double precision;
@@ -106,7 +118,7 @@ CREATE INDEX idx_comment ON observations USING btree (comment COLLATE pg_catalog
 
 -- Index: idx_entity_short_name
 DROP INDEX IF EXISTS idx_entity_short_name;
-CREATE INDEX idx_entity ON observations USING btree (entity COLLATE pg_catalog."default");
+CREATE INDEX idx_entity_short_name ON observations USING btree (entity COLLATE pg_catalog."default");
 
 -- Index: idx_has_death
 DROP INDEX IF EXISTS idx_has_death;
@@ -115,6 +127,8 @@ CREATE INDEX idx_has_death ON observations USING btree (has_death);
 -- Index: idx_name
 DROP INDEX IF EXISTS idx_name;
 CREATE INDEX idx_name ON observations USING btree (name);
+
+VACUUM ANALYZE observations;
 
 -- Create indexes on places table
 -- Primary key
@@ -126,7 +140,9 @@ DROP INDEX IF EXISTS idx_places_geom_gist;
 ALTER TABLE places DROP COLUMN IF EXISTS the_geom CASCADE;
 ALTER TABLE places DROP COLUMN IF EXISTS coord_lon_l93 CASCADE;
 ALTER TABLE places DROP COLUMN IF EXISTS coord_lat_l93 CASCADE;
+\o /dev/null
 SELECT AddGeometryColumn('places', 'the_geom', 2154, 'POINT', 2);
+\o
 UPDATE places SET the_geom = ST_Transform(ST_SetSRID(ST_MakePoint(coord_lon, coord_lat), 4326), 2154);
 CREATE INDEX idx_places_geom_gist ON places USING GIST (the_geom);
 ALTER TABLE places ADD coord_lon_l93 double precision;
@@ -134,15 +150,16 @@ ALTER TABLE places ADD coord_lat_l93 double precision;
 UPDATE places SET coord_lon_l93 = ST_X(the_geom);
 UPDATE places SET coord_lat_l93 = ST_Y(the_geom);
 
+VACUUM ANALYZE places;
+
 -- Create indexes on species table
 -- Primary key
 ALTER TABLE species DROP CONSTRAINT IF EXISTS pk_species;
 ALTER TABLE species ADD CONSTRAINT pk_species PRIMARY KEY(id);
+VACUUM ANALYZE species;
 
 -- Create indexes on taxo_groups table
 -- Primary key
 ALTER TABLE taxo_groups DROP CONSTRAINT IF EXISTS pk_taxo_groups;
 ALTER TABLE taxo_groups ADD CONSTRAINT pk_taxo_groupss PRIMARY KEY(id);
-
--- Clean tables and indexes
-VACUUM ANALYZE;
+VACUUM ANALYZE taxo_groups;

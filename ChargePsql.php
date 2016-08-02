@@ -96,11 +96,11 @@ class DbAccess
     private function ddlNamesTypes($data)
     {
         // Analyze first element to define DDL types
-        $this->log->trace(_("Analyse de l'élement : ") . print_r($data[1], true));
+        $this->log->trace(_("Analyse de l'élement : ") . print_r($data[0], true));
         $ddl = array();
-        reset($data[1]);
+        reset($data[0]);
         // Find the types
-        foreach ($data[1] as $key => $value) {
+        foreach ($data[0] as $key => $value) {
             $ddl[$key] = $this->typeOfValue($value);
         }
         $this->log->trace(print_r($ddl, true));
@@ -230,6 +230,10 @@ class StoreFile
 
     /** Holds the file storage directory. */
     private $fileStore;
+
+    /** Holds the first ands last file number (limit for debug). */
+    private $fileMin;
+    private $fileMax;
 
     /** Constructor stores parameters. */
     public function __construct($dbh, $table, $fileStore)
@@ -1056,35 +1060,52 @@ try {
 }
 
 // Store entities in database
-$places = new StoreFile($dbh, "entities", $options['file_store']);
-$places->store();
+$entities = new StoreFile($dbh, "entities", $options['file_store']);
+$entities->store();
+unset($entities);
 
 // Store export_organizations in database
-$places = new StoreFile($dbh, "export_organizations", $options['file_store']);
-$places->store();
+$export_organizations = new StoreFile($dbh, "export_organizations", $options['file_store']);
+$export_organizations->store();
+unset($export_organizations);
 
 // Store families in database
-$places = new StoreFile($dbh, "families", $options['file_store']);
-$places->store();
+$families = new StoreFile($dbh, "families", $options['file_store']);
+$families->store();
+unset($families);
+
+// Store grids in database
+$grids = new StoreFile($dbh, "grids", $options['file_store']);
+$grids->store();
+unset($grids);
 
 // Store local_admin_units in database
-$places = new StoreFile($dbh, "local_admin_units", $options['file_store']);
-$places->store();
-
-// Store places in database
-$places = new StoreFile($dbh, "places", $options['file_store']);
-$places->store();
-
-// Store species in database
-$places = new StoreFile($dbh, "species", $options['file_store']);
-$places->store();
-
-// Store taxo_groups in database
-$places = new StoreFile($dbh, "taxo_groups", $options['file_store']);
-$places->store();
+$local_admin_units = new StoreFile($dbh, "local_admin_units", $options['file_store']);
+$local_admin_units->store();
+unset($local_admin_units);
 
 // Store observations in database
 observations($dbh);
 
+// Store places in database
+$places = new StoreFile($dbh, "places", $options['file_store']);
+$places->store();
+unset($places);
+
+// Store species in database
+$species = new StoreFile($dbh, "species", $options['file_store']);
+$species->store();
+unset($species);
+
+// Store taxo_groups in database
+$taxo_groups = new StoreFile($dbh, "taxo_groups", $options['file_store']);
+$taxo_groups->store();
+unset($taxo_groups);
+
+// Store territorial_units in database
+$territorial_units = new StoreFile($dbh, "territorial_units", $options['file_store']);
+$territorial_units->store();
+unset($territorial_units);
+
 // Close database connection
-$dbh = null;
+unset($dbh);
