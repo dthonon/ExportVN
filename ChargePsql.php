@@ -310,16 +310,20 @@ class StoreFile
      /** Holds the dh accessor. */
      private $dba;
 
+     /** Holds the logging trace level, to conditionaly execute tracing */
+     private $tracing;
+
      /** Constructor stores parameters. */
      public function __construct($dba)
      {
          $this->log = Logger::getLogger(__CLASS__);
+         $this->tracing = $this->log->isTraceEnabled();
          $this->dba = $dba;
      }
 
      private function bDate($data, &$obs, $suffix)
      {
-         $this->log->trace('  ' . $suffix . 'date => ' . $data['@ISO8601']);
+         if ($this->tracing) $this->log->trace('  ' . $suffix . 'date => ' . $data['@ISO8601']);
          $obs[$suffix . 'date'] = $data['@ISO8601'];
      }
 
@@ -1029,7 +1033,7 @@ $longOpts = array(
 
 $options = getopt($shortOpts, $longOpts);
 
-// Create logger and set level
+// Create logger and set level. Should not be changed after, as used in class constructor
 $logger = Logger::getRootLogger();
 $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 

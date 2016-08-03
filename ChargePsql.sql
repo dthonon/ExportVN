@@ -131,6 +131,12 @@ CREATE INDEX idx_name ON observations USING btree (name);
 VACUUM ANALYZE observations;
 
 -- Create indexes on places table
+-- Removez duplicate rows (download bug ?)
+ DELETE FROM places
+    WHERE id IN (SELECT id
+                    FROM (SELECT id, ROW_NUMBER() OVER (partition BY id) AS rnum
+                            FROM places) t
+                    WHERE t.rnum > 1);
 -- Primary key
 ALTER TABLE places DROP CONSTRAINT IF EXISTS pk_places;
 ALTER TABLE places ADD CONSTRAINT pk_places PRIMARY KEY(id);
@@ -153,6 +159,12 @@ UPDATE places SET coord_lat_l93 = ST_Y(the_geom);
 VACUUM ANALYZE places;
 
 -- Create indexes on species table
+-- Removez duplicate rows (download bug ?)
+ DELETE FROM species
+    WHERE id IN (SELECT id
+                    FROM (SELECT id, ROW_NUMBER() OVER (partition BY id) AS rnum
+                            FROM species) t 
+                    WHERE t.rnum > 1);
 -- Primary key
 ALTER TABLE species DROP CONSTRAINT IF EXISTS pk_species;
 ALTER TABLE species ADD CONSTRAINT pk_species PRIMARY KEY(id);

@@ -18,7 +18,7 @@
  * may be used to endorse or promote products derived from this software without
  * specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
@@ -76,9 +76,9 @@ class DownloadTable
 
     function download($oauth)
     {
-        $this->log->info(_("Téléchargement et stockage des ") . $this->table);
+        $this->log->info(_('Téléchargement et stockage des ') . $this->table);
 
-        $requestURI = $this->site . "api/" . $this->table;
+        $requestURI = $this->site . 'api/' . $this->table;
 
         $params = array(
             'user_pw' => $this->user_pw,
@@ -90,31 +90,31 @@ class DownloadTable
         do {
             // Get data
             $oauth->enableDebug();
-            $this->log->debug(_("Demande de ") . $this->table . " n° " . $i . ", API = " . $requestURI);
+            $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
             $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
             $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
-            $this->log->trace(_("Réception des données"));
+            $this->log->trace(_('Réception des données'));
             $response = $oauth->getLastResponse();
-            $this->log->trace(_("Code retour") . print_r($oauth->getLastResponseInfo(), true));
+            $this->log->trace(_('Code retour') . print_r($oauth->getLastResponseInfo(), true));
             $respHead = $oauth->getLastResponseHeaders();
             $this->log->trace($respHead);
-            $pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
+            $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
             if ($pageNum == 1) {
                 $key = rtrim($pageKey[1]);
-                $this->log->debug(_("Reçu clé = |") . $key . "|");
+                $this->log->debug(_('Reçu clé = |') . $key . '|');
             } else {
                 $key = '';
-                $this->log->debug(_("Reçu sans clé"));
+                $this->log->debug(_('Reçu sans clé'));
             }
 
             $data = json_decode($response, true);
-            $this->log->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
-            if ((count($data["data"]) == 0) || ($pageNum == 0)) {
-                $this->log->debug(_("Fin de réception"));
+            $this->log->debug(_('Reçu ') . count($data['data']) . _(' élements'));
+            if ((count($data['data']) == 0) || ($pageNum == 0)) {
+                $this->log->debug(_('Fin de réception'));
                 break;
             }
             file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
-            // $this->log->trace(print_r($data["data"], true));
+            // $this->log->trace(print_r($data['data'], true));
 
             $params = array(
                 'user_pw' => $this->user_pw,
@@ -146,7 +146,7 @@ class DownloadTable
  */
 function storeTaxoGroups($logger, $options, $oauth)
 {
-    $requestURI = $options['site'] . "api/taxo_groups";
+    $requestURI = $options['site'] . 'api/taxo_groups';
 
     $params = array(
         'user_pw' => $options['user_pw'],
@@ -158,31 +158,31 @@ function storeTaxoGroups($logger, $options, $oauth)
     do {
         // Get data
         $oauth->enableDebug();
-        $logger->debug(_("Demande de taxo_groups ") . $i);
-        $logger->trace(_(" => params:") . print_r($params, TRUE));
+        $logger->debug(_('Demande de taxo_groups ') . $i);
+        $logger->trace(_(' => params:') . print_r($params, TRUE));
         $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
-        $logger->trace("Réception des données");
+        $logger->trace('Réception des données');
         $response = $oauth->getLastResponse();
         // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
         $respHead = $oauth->getLastResponseHeaders();
         // $logger->trace($respHead);
-        $pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
-        // $logger->trace("Page = " . $pageNum . ", key = |" . rtrim($pageKey[1]) . "|");
+        $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
+        // $logger->trace('Page = ' . $pageNum . ', key = |' . rtrim($pageKey[1]) . '|');
         $data = json_decode($response, true);
-        $logger->debug(_("Reçu ") . count($data["data"]) . _(" élements"));
-        if (count($data["data"]) == 0) {
+        $logger->debug(_('Reçu ') . count($data['data']) . _(' élements'));
+        if (count($data['data']) == 0) {
             break;
         }
         file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/taxo_groups_' . $i . '.json', $response);
 
-        foreach ($data["data"] as $key => $value) {
-            // $logger->trace(print_r($data["data"][$key], true));
-            $taxo = $data["data"][$key];
-            $logger->trace(_("Groupe taxonomique : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
-            if ($taxo["access_mode"] != "none") {
-                $logger->info(_("Taxon à télécharger : ") . $taxo["id"] . " = " . $taxo["name"] . _(", access = ") . $taxo["access_mode"]);
-                $taxoList[] = $taxo["id"];
+        foreach ($data['data'] as $key => $value) {
+            // $logger->trace(print_r($data['data'][$key], true));
+            $taxo = $data['data'][$key];
+            $logger->trace(_('Groupe taxonomique : ') . $taxo['id'] . ' = ' . $taxo['name'] . _(', access = ') . $taxo['access_mode']);
+            if ($taxo['access_mode'] != 'none') {
+                $logger->info(_('Taxon à télécharger : ') . $taxo['id'] . ' = ' . $taxo['name'] . _(', access = ') . $taxo['access_mode']);
+                $taxoList[] = $taxo['id'];
             }
         }
 
@@ -214,7 +214,7 @@ function storeTaxoGroups($logger, $options, $oauth)
  */
 function storeObservations($logger, $options, $oauth)
 {
-    $requestURI = $options['site'] . "api/observations";
+    $requestURI = $options['site'] . 'api/observations';
 
     // First, request list of taxo groups enabled
     // Note : as side effect, the taxo_group file is created here
@@ -225,7 +225,7 @@ function storeObservations($logger, $options, $oauth)
 
     // Loop on taxo groups, starting from the end to finish with birds (largest set)
     foreach (array_reverse($taxoList) as $idTaxo) {
-        $logger->info(_("Demande des observations du groupe taxonomique = ") . $idTaxo);
+        $logger->info(_('Demande des observations du groupe taxonomique = ') . $idTaxo);
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
@@ -236,28 +236,28 @@ function storeObservations($logger, $options, $oauth)
         do {
             // Get data
             $oauth->enableDebug();
-            $logger->debug(_("Demande d'observations ") . $i . _(", groupe taxonomique ") . $idTaxo);
-            $logger->trace(_(" => params : ") . print_r($params, TRUE));
+            $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idTaxo);
+            $logger->trace(_(' => params : ') . print_r($params, TRUE));
             try {
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
                 // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
-                $logger->trace(_("Réception des données"));
+                $logger->trace(_('Réception des données'));
                 $response = $oauth->getLastResponse();
-                // $logger->trace(_("Réponse HTTP ") . print_r($oauth->getLastResponseInfo(), true));
+                // $logger->trace(_('Réponse HTTP ') . print_r($oauth->getLastResponseInfo(), true));
                 $respHead = $oauth->getLastResponseHeaders();
-                // $logger->trace(_("Code HTTP ")$respHead);
-                $pageNum = preg_match("/pagination_key: (.*)/", $respHead, $pageKey);
-                $logger->debug(_("Reçu page = ") . $pageNum . _(", clé = |") . rtrim($pageKey[1]) . "|");
+                // $logger->trace(_('Code HTTP ')$respHead);
+                $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
+                $logger->debug(_('Reçu page = ') . $pageNum . _(', clé = |') . rtrim($pageKey[1]) . '|');
                 $data = json_decode($response, true);
 
-                $sightings = (array_key_exists("sightings", $data["data"])) ? count($data["data"]["sightings"]) : 0;
-                $forms = (array_key_exists("forms", $data["data"])) ? count($data["data"]["forms"]) : 0;
-                $logger->debug(_("Lu ") . $sightings . _(" élements sightings"));
-                $logger->debug(_("Lu ") . $forms . _(" élements forms"));
+                $sightings = (array_key_exists('sightings', $data['data'])) ? count($data['data']['sightings']) : 0;
+                $forms = (array_key_exists('forms', $data['data'])) ? count($data['data']['forms']) : 0;
+                $logger->debug(_('Lu ') . $sightings . _(' élements sightings'));
+                $logger->debug(_('Lu ') . $forms . _(' élements forms'));
 
                 // Check if data received
                 if ($sightings + $forms == 0) { // Empty file => exit
-                    $logger->trace(_("Aucune données reçues "));
+                    $logger->trace(_('Aucune données reçues '));
                     break;
                     // sleep(10);
                     // $params = array(
@@ -267,7 +267,7 @@ function storeObservations($logger, $options, $oauth)
                     //     'pagination_key' => rtrim($pageKey[1])
                     // );
                 } else { // Received some data
-                    $logger->trace(_("Données reçues => stockage en json"));
+                    $logger->trace(_('Données reçues => stockage en json'));
                     file_put_contents(
                         getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json',
                         $response
@@ -287,11 +287,11 @@ function storeObservations($logger, $options, $oauth)
                 $nbError += 1;
                 $response = $oauth->getLastResponse();
                 $jsonError = json_decode($oauthException->lastResponse, true);
-                $logger->error(_("Erreur de réception numéro : ") . $nbError . _(", code : ") . var_export($jsonError, true));
+                $logger->error(_('Erreur de réception numéro : ') . $nbError . _(', code : ') . var_export($jsonError, true));
                 $logger->error(print_r($oauth->getLastResponseInfo(), true));
-                $logger->error(_("Message d'erreur : ") . $oauthException->getMessage());
+                $logger->error(_('Message d\'erreur : ') . $oauthException->getMessage());
                 if ($nbError > 5) {
-                    $logger->fatal(_("Arrêt après 5 erreurs"));
+                    $logger->fatal(_('Arrêt après 5 erreurs'));
                     break;
                 }
                 sleep(10); // Wait before next request
@@ -305,17 +305,17 @@ function storeObservations($logger, $options, $oauth)
 ini_set('memory_limit', '512M');
 
 // Define command line options
-$shortOpts = ""; // No short form options
+$shortOpts = ''; // No short form options
 
 $longOpts = array(
-    "user_email:",      // Required: login email
-    "user_pw:",         // Required: login password
-    "pagination_key::", // Optional: pagination key to restart from
-    "consumer_key:",    // Required: API key
-    "consumer_secret:", // Required: API key
-    "site:",            // Required: biolovision site to access
-    "file_store:",      // Required: directory where downloaded json files are stored. Relative to $HOME
-    "logging::"         // Optional: debugging messages
+    'user_email:',      // Required: login email
+    'user_pw:',         // Required: login password
+    'pagination_key::', // Optional: pagination key to restart from
+    'consumer_key:',    // Required: API key
+    'consumer_secret:', // Required: API key
+    'site:',            // Required: biolovision site to access
+    'file_store:',      // Required: directory where downloaded json files are stored. Relative to $HOME
+    'logging::'         // Optional: debugging messages
 )
 ;
 
@@ -325,12 +325,12 @@ $options = getopt($shortOpts, $longOpts);
 $logger = Logger::getRootLogger();
 $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 
-$logger->info(_("Début de l'export"));
+$logger->info(_('Début de l\'export'));
 // $logger->trace(var_export($options, true));
 
 // Get authorization from Biolovision
 try {
-    $logger->trace(_("Obtention de oauth"));
+    $logger->trace(_('Obtention de oauth'));
     $oauth = new OAuth($options['consumer_key'], $options['consumer_secret'], OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_URI);
     // $oauth->enableDebug();
 } catch (OAuthException $e) {
@@ -340,10 +340,10 @@ try {
 
 // Download and store export taxo_groups
 // Note : also called by storeObservations, so no need to uncomment
-// $logger->info(_("Téléchargement et stockage des 'taxo_groups'"));
+// $logger->info(_('Téléchargement et stockage des 'taxo_groups''));
 // $taxoList = storeTaxoGroups($logger, $options, $oauth);
 // foreach ($taxoList as $idTaxo) {
-    // $logger->trace(_("Groupe taxonomique = ") . $idTaxo);
+    // $logger->trace(_('Groupe taxonomique = ') . $idTaxo);
 // }
 
 // Download and store local_admin_units in database
@@ -392,5 +392,5 @@ $territorial_units->download($oauth);
 unset($places);
 
 // Download and store export observations
-$logger->info(_("Téléchargement et stockage des 'observations'"));
+$logger->info(_('Téléchargement et stockage des observations'));
 storeObservations($logger, $options, $oauth);
