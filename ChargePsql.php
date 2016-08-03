@@ -98,9 +98,9 @@ class DbAccess
         // Analyze last element to define DDL types, as first could be special (i.e. integer instead of character)
         $this->log->trace(_('Analyse de l\'élement : ') . print_r($data[count($data) - 1], true));
         $ddl = array();
-        reset($data[count($data) - 1]);
+        reset($data);
         // Find the types
-        foreach ($data[0] as $key => $value) {
+        foreach ($data[count($data) - 1] as $key => $value) {
             $ddl[$key] = $this->typeOfValue($value);
         }
         $this->log->trace(print_r($ddl, true));
