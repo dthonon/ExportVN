@@ -85,7 +85,7 @@ class DbAccess
     }
 
     /**
-     * Prepares the name,type part of the table creation DDL statement
+     * Prepares the name & type part of the table creation DDL statement
      *
      * @param array $data
      *            Data to parse to find the names and types
@@ -187,7 +187,7 @@ class DbAccess
     }
 
     /**
-     * Creates table, that must not exist before
+     * Creates table with colums infered from $data, that must not exist before
      *
      * @param array $data
      *            Data to be iterated over to create columns
@@ -214,7 +214,69 @@ class DbAccess
 }
 
 /**
- * Stores files in a database table.
+ * Parse data of generic (not observation) json structure and store in database.
+ *
+ */
+class ParseData
+{
+    /** Holds the Logger. */
+    private $log;
+
+    /** Holds the dh handle. */
+    private $dbh;
+
+    /** Holds the table name. */
+    private $table;
+
+    /** Flag showing table has been dropped and created. */
+    private $tableDropped;
+
+    /** Holds the db handle name. */
+    private $dba;
+
+    /** List of columns, kept across files. */
+    private $ddlNT = array();
+
+    /** Constructor stores parameters. */
+    public function __construct($dbh, $table)
+    {
+        $this->log = Logger::getLogger(__CLASS__);
+        $this->dbh = $dbh;
+        $this->table = $table;
+        $this->tableDropped = false;
+        $this->dba = new DbAccess($this->dbh, $this->table);
+    }
+
+    /**
+     * Parse and store in database.
+     *
+     * @param array $response
+     *            Data to be iterated over to fill database
+     * @return void
+     * @author Daniel Thonon
+     *
+     */
+
+    public function parse($response)
+    {
+        $this->log->info(_('Analyse des données json de ') . $this->table);
+
+        $this->log->trace(_('Début de l\'analyse des ' . $this->table));
+        $data = json_decode($response, true);
+
+        // Drop and create table on first loop
+        if (! $this->tableDropped) {
+            $this->dba->dropTable();
+            $this->ddlNT = $this->dba->createTable($data['data']);
+            $this->tableDropped = true;
+        }
+        // Insert rows
+        $this->ddlNT = $this->dba->insertRows($data['data'], $this->ddlNT);
+    }
+}
+
+/**
+ * Loops over files for a table, parse data and stor in database table.
  *
  */
 class StoreFile
@@ -231,17 +293,24 @@ class StoreFile
     /** Holds the file storage directory. */
     private $fileStore;
 
+    /** Holds the data parser. */
+    private $parser;
+
     /** Holds the first ands last file number (limit for debug). */
     private $fileMin;
     private $fileMax;
 
     /** Constructor stores parameters. */
-    public function __construct($dbh, $table, $fileStore)
+    public function __construct($dbh, $table, $fileStore, $fileMin = 1, $fileMax = 1000)
     {
         $this->log = Logger::getLogger(__CLASS__);
         $this->dbh = $dbh;
         $this->table = $table;
         $this->fileStore = $fileStore;
+        $this->parser = new ParseData($this->dbh, $this->table);
+        $this->fileMin = $fileMin;
+        $this->fileMax = $fileMax;
+
     }
 
     /**
@@ -254,34 +323,16 @@ class StoreFile
 
     public function store()
     {
-        $dba = new DbAccess($this->dbh, $this->table);
-
-        $ddlNT = array(); // List of columns, kept across files
-        $fileMin = 1;    // min file for debug
-        $fileMax = 1000; // max file for debug
-
         $this->log->info(_('Chargement des fichiers json de ') . $this->table);
 
-        // First, drop places table
-        $dba->dropTable();
-        $obsDropped = true;
-
         // Loop on dowloaded files
-        for ($fic = $fileMin; $fic < $fileMax; $fic++) {
+        for ($fic = $this->fileMin; $fic < $this->fileMax; $fic++) {
             if (file_exists(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json')) {
                 $this->log->info(_('Lecture du fichier ') . getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
                 // Analyse du fichier
                 $response = file_get_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
 
-                $this->log->trace(_('Début de l\'analyse des ' . $this->table));
-                $data = json_decode($response, true);
-
-                // Create table on first loop
-                if ($fic == 1) {
-                    $ddlNT = $dba->createTable($data['data']);
-                }
-                // Insert rows
-                $ddlNT = $dba->insertRows($data['data'], $ddlNT);
+                $this->parser->parse($response);
             }
         }
     }
@@ -307,18 +358,33 @@ class StoreFile
      /** Holds the Logger. */
      private $log;
 
-     /** Holds the dh accessor. */
+     /** Holds the dh handle. */
+     private $dbh;
+
+     /** Holds the table name. */
+     private $table;
+
+     /** Flag showing table has been dropped and created. */
+     private $tableDropped;
+
+     /** Holds the db handle name. */
      private $dba;
+
+     /** List of columns, kept across files. */
+     private $ddlNT = array();
 
      /** Holds the logging trace level, to conditionaly execute tracing */
      private $tracing;
 
      /** Constructor stores parameters. */
-     public function __construct($dba)
+     public function __construct($dbh, $table)
      {
          $this->log = Logger::getLogger(__CLASS__);
+         $this->dbh = $dbh;
+         $this->table = $table;
+         $this->tableDropped = false;
+         $this->dba = new DbAccess($this->dbh, $this->table);
          $this->tracing = $this->log->isTraceEnabled();
-         $this->dba = $dba;
      }
 
      private function bDate($data, &$obs, $suffix)
@@ -871,7 +937,7 @@ class StoreFile
          $this->log->trace(print_r($obs, true));
      }
 
-     public function bSightings($data, $dbh, &$obsDropped, $ddlNT)
+     public function bSightings($data, &$obsDropped, $ddlNT)
      {
          $rowMin = 0; // starting record for debug
          $rowMax = 1000000000; // ending record for debug
@@ -909,7 +975,7 @@ class StoreFile
          return($ddlNT);
      }
 
-     public function bForms($data, $dbh, &$obsDropped, $ddlNT)
+     public function bForms($data, &$obsDropped, $ddlNT)
      {
          $nbRow = 0;
          reset($data);
@@ -921,7 +987,7 @@ class StoreFile
              foreach ($value as $keyS => $valueS) {
                  switch ($keyS) {
                      case 'sightings':
-                         $ddlNT = $this->bSightings($valueS, $dbh, $obsDropped, $ddlNT);
+                         $ddlNT = $this->bSightings($valueS, $obsDropped, $ddlNT);
                          break;
                      default:
                          $this->log->trace(_('Element forms non traité : ') . $keyS);
@@ -930,6 +996,51 @@ class StoreFile
          }
 
          return($ddlNT);
+     }
+
+     public function parse($response)
+     {
+         $this->log->info(_('Analyse des données json de ') . $this->table);
+
+         // Drop table on first loop. It will be created after parsing.
+         if (! $this->tableDropped) {
+             $this->dba->dropTable();
+             $this->tableDropped = true;
+         }
+
+         $this->log->trace(_('Début de l\'analyse des ' . $this->table));
+         $data = json_decode($response, true);
+
+         $sightings = (is_array($data) && (array_key_exists('sightings', $data['data']))) ?
+                         count($data['data']['sightings']) :
+                         0;
+         $forms = (is_array($data) && (array_key_exists('forms', $data['data']))) ?
+                      count($data['data']['forms']) :
+                      0;
+
+         // Empty file => exit
+         if ($sightings + $forms == 0) {
+             $this->log->warn(_('Fichier de données vide'));
+         } else {
+             $this->log->debug(_('Chargement de ') . $sightings . ' élements sightings');
+             $this->log->debug(_('Chargement de ') . $forms . ' élements forms');
+             reset($data);
+             foreach ($data['data'] as $key => $value) {
+                 $this->log->trace(_('Analyse de l\'élement : ') . $key);
+                 switch ($key) {
+                     case 'sightings':
+                         $this->ddlNT = $this->bSightings($value, $this->tableDropped, $this->ddlNT);
+                         break;
+                     case 'forms':
+                         $this->ddlNT = $this->bForms($value, $this->tableDropped, $this->ddlNT);
+                         break;
+                     default:
+                         $this->log->warn(_('Element racine inconnu: ') . $key);
+                 }
+             }
+             $this->log->info(_('Fin de l\'analyse d\'un fichier d\'observations'));
+         }
+
      }
  }
 
@@ -948,20 +1059,13 @@ function observations($dbh)
     global $logger;
     global $options;
 
-    $dba = new DbAccess($dbh, 'observations');
-
-    $ddlNT = array(); // List of columns, kept across files
-
-    $parser = new ObsParser($dba);
-
     $fileMin = 1;    // min file for debug
-    $fileMax = 30; // max file for debug
+    $fileMax = 3000; // max file for debug
+
+    // Create specific parser for observation data
+    $parser = new ObsParser($dbh, 'observations');
 
     $logger->info(_('Chargement des fichiers json d\'observations'));
-
-    // First, drop observations table
-    $dba->dropTable();
-    $obsDropped = true;
 
     // Loop on dowloaded files
     for ($fic = $fileMin; $fic < $fileMax; $fic++) {
@@ -976,38 +1080,8 @@ function observations($dbh)
                 $options['file_store'] . '/observations_' . $fic . '.json'
             );
 
-            $logger->trace(_('Début de l\'analyse des observations'));
-            $data = json_decode($response, true);
+            $parser->parse($response);
 
-            $sightings = (is_array($data) && (array_key_exists('sightings', $data['data']))) ?
-                            count($data['data']['sightings']) :
-                            0;
-            $forms = (is_array($data) && (array_key_exists('forms', $data['data']))) ?
-                         count($data['data']['forms']) :
-                         0;
-
-            // Empty file => exit
-            if ($sightings + $forms == 0) {
-                $logger->warn(_('Fichier de données vide'));
-            } else {
-                $logger->debug(_('Chargement de ') . $sightings . ' élements sightings');
-                $logger->debug(_('Chargement de ') . $forms . ' élements forms');
-                reset($data);
-                foreach ($data['data'] as $key => $value) {
-                    $logger->trace(_('Analyse de l\'élement : ') . $key);
-                    switch ($key) {
-                        case 'sightings':
-                            $ddlNT = $parser->bSightings($value, $dbh, $obsDropped, $ddlNT);
-                            break;
-                        case 'forms':
-                            $ddlNT = $parser->bForms($value, $dbh, $obsDropped, $ddlNT);
-                            break;
-                        default:
-                            $logger->warn(_('Element racine inconnu: ') . $key);
-                    }
-                }
-                $logger->info(_('Fin de l\'analyse d\'un fichier d\'observations'));
-            }
         }
     }
 }
