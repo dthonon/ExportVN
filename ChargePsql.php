@@ -206,7 +206,8 @@ class DbAccess
         }
         $ddlStmt = substr($ddlStmt, 0, - 1) . ');';
         $ddlStmt = 'CREATE TABLE ' . $this->table . $ddlStmt;
-        $this->log->info(_('Création de la table ') . $ddlStmt);
+        $this->log->info(_('Création de la table ') . $this->table);
+        $this->log->debug(_('DDL: ') . $ddlStmt);
         $this->dbh->exec($ddlStmt);
         return $ddlNT;
     }
@@ -228,8 +229,8 @@ class ParseData
     /** Holds the table name. */
     private $table;
 
-    /** Flag showing table has been dropped and created. */
-    private $tableDropped;
+    /** Count parsing passes: table dropped and created on first passs. */
+    private $passNumber;
 
     /** Holds the db handle name. */
     private $dba;
@@ -243,7 +244,7 @@ class ParseData
         $this->log = Logger::getLogger(__CLASS__);
         $this->dbh = $dbh;
         $this->table = $table;
-        $this->tableDropped = false;
+        $this->passNumber = 0;
         $this->dba = new DbAccess($this->dbh, $this->table);
     }
 
@@ -265,10 +266,10 @@ class ParseData
         $data = json_decode($response, true);
 
         // Drop and create table on first loop
-        if (! $this->tableDropped) {
+        if ($this->passNumber == 0) {
             $this->dba->dropTable();
             $this->ddlNT = $this->dba->createTable($data['data']);
-            $this->tableDropped = true;
+            $this->passNumber++;
         }
         // Insert rows
         $this->ddlNT = $this->dba->insertRows($data['data'], $this->ddlNT);
@@ -301,13 +302,13 @@ class StoreFile
     private $fileMax;
 
     /** Constructor stores parameters. */
-    public function __construct($dbh, $table, $fileStore, $fileMin = 1, $fileMax = 1000)
+    public function __construct($dbh, $table, $parse, $fileStore, $fileMin = 1, $fileMax = 1000)
     {
         $this->log = Logger::getLogger(__CLASS__);
         $this->dbh = $dbh;
         $this->table = $table;
         $this->fileStore = $fileStore;
-        $this->parser = new ParseData($this->dbh, $this->table);
+        $this->parser = new $parse($this->dbh, $this->table);
         $this->fileMin = $fileMin;
         $this->fileMax = $fileMax;
 
@@ -364,8 +365,8 @@ class StoreFile
      /** Holds the table name. */
      private $table;
 
-     /** Flag showing table has been dropped and created. */
-     private $tableDropped;
+     /** Count parsing passes: table dropped and created on first passs. */
+     private $passNumber;
 
      /** Holds the db handle name. */
      private $dba;
@@ -382,7 +383,7 @@ class StoreFile
          $this->log = Logger::getLogger(__CLASS__);
          $this->dbh = $dbh;
          $this->table = $table;
-         $this->tableDropped = false;
+         $this->passNumber = 0;
          $this->dba = new DbAccess($this->dbh, $this->table);
          $this->tracing = $this->log->isTraceEnabled();
      }
@@ -395,37 +396,37 @@ class StoreFile
 
      private function bSpecies($data, &$obs)
      {
-         $this->log->trace('  species_id => ' . $data['@id']);
+         if ($this->tracing) $this->log->trace('  species_id => ' . $data['@id']);
          $obs['id_species'] = $data['@id'];
-         $this->log->trace('  species_name => ' . $data['name']);
+         if ($this->tracing) $this->log->trace('  species_name => ' . $data['name']);
          $obs['name_species'] = $data['name'];
-         $this->log->trace('  species_latin_name => ' . $data['latin_name']);
+         if ($this->tracing) $this->log->trace('  species_latin_name => ' . $data['latin_name']);
          $obs['latin_species'] = $data['latin_name'];
      }
 
      private function bPlace($data, &$obs)
      {
-         $this->log->trace('  id_place => ' . $data['@id']);
+         if ($this->tracing) $this->log->trace('  id_place => ' . $data['@id']);
          $obs['id_place'] = $data['@id'];
-         $this->log->trace('  place => ' . $data['name']);
+         if ($this->tracing) $this->log->trace('  place => ' . $data['name']);
          $obs['place'] = $data['name'];
-         $this->log->trace('  municipality => ' . $data['municipality']);
+         if ($this->tracing) $this->log->trace('  municipality => ' . $data['municipality']);
          $obs['municipality'] = $data['municipality'];
-         $this->log->trace('  insee => ' . $data['insee']);
+         if ($this->tracing) $this->log->trace('  insee => ' . $data['insee']);
          $obs['insee'] = $data['insee'];
-         $this->log->trace('  county => ' . $data['county']);
+         if ($this->tracing) $this->log->trace('  county => ' . $data['county']);
          $obs['county'] = $data['county'];
-         $this->log->trace('  country => ' . $data['country']);
+         if ($this->tracing) $this->log->trace('  country => ' . $data['country']);
          $obs['country'] = $data['country'];
-         $this->log->trace('  altitude => ' . $data['altitude']);
+         if ($this->tracing) $this->log->trace('  altitude => ' . $data['altitude']);
          $obs['altitude'] = $data['altitude'];
-         $this->log->trace('  coord_lat => ' . $data['coord_lat']);
+         if ($this->tracing) $this->log->trace('  coord_lat => ' . $data['coord_lat']);
          $obs['place_coord_lat'] = $data['coord_lat'];
-         $this->log->trace('  coord_lon => ' . $data['coord_lon']);
+         if ($this->tracing) $this->log->trace('  coord_lon => ' . $data['coord_lon']);
          $obs['place_coord_lon'] = $data['coord_lon'];
-         $this->log->trace('  loc_precision => ' . $data['loc_precision']);
+         if ($this->tracing) $this->log->trace('  loc_precision => ' . $data['loc_precision']);
          $obs['loc_precision'] = $data['loc_precision'];
-         $this->log->trace('  place_type => ' . $data['place_type']);
+         if ($this->tracing) $this->log->trace('  place_type => ' . $data['place_type']);
          $obs['place_type'] = $data['place_type'];
      }
 
@@ -435,103 +436,103 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case 'cause':
-                     $this->log->trace('    ' . $suffix . 'cause => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'cause => ' . $value);
                      $obs[$suffix . 'cause'] = $value;
                      break;
                  case 'time_found':
-                     $this->log->trace('    ' . $suffix . 'time_found => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'time_found => ' . $value);
                      $obs[$suffix . 'time_found'] = $value;
                      break;
                  case 'comment':
-                     $this->log->trace('    ' . $suffix . 'comment => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'comment => ' . $value);
                      $obs[$suffix . 'comment'] = $value;
                      break;
                  case 'electric_cause':
-                     $this->log->trace('    ' . $suffix . 'electric_cause => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'electric_cause => ' . $value);
                      $obs[$suffix . 'electric_cause'] = $value;
                      break;
                  case 'trap':
-                     $this->log->trace('    ' . $suffix . 'trap => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'trap => ' . $value);
                      $obs[$suffix . 'trap'] = $value;
                      break;
                  case 'trap_circonstances':
-                     $this->log->trace('    ' . $suffix . 'trap_circonstances => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'trap_circonstances => ' . $value);
                      $obs[$suffix . 'trap_circonstances'] = $value;
                      break;
                  case 'capture':
-                     $this->log->trace('    ' . $suffix . 'capture => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'capture => ' . $value);
                      $obs[$suffix . 'capture'] = $value;
                      break;
                  case 'electric_line_type':
-                     $this->log->trace('    ' . $suffix . 'electric_line_type => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'electric_line_type => ' . $value);
                      $obs[$suffix . 'electric_line_type'] = $value;
                      break;
                  case 'electric_line_configuration':
-                     $this->log->trace('    ' . $suffix . 'electric_line_configuration => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'electric_line_configuration => ' . $value);
                      $obs[$suffix . 'electric_line_configuration'] = $value;
                      break;
                  case 'electric_line_configuration_neutralised':
-                     $this->log->trace('    ' . $suffix . 'electric_line_configuration_neutralised => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'electric_line_configuration_neutralised => ' . $value);
                      $obs[$suffix . 'electric_line_configuration_neutralised'] = $value;
                      break;
                  case 'electric_hta_pylon_id':
-                     $this->log->trace('    ' . $suffix . 'electric_hta_pylon_id => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'electric_hta_pylon_id => ' . $value);
                      $obs[$suffix . 'electric_hta_pylon_id'] = $value;
                      break;
                  case 'fishing_collected':
-                     $this->log->trace('    ' . $suffix . 'fishing_collected => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'fishing_collected => ' . $value);
                      $obs[$suffix . 'fishing_collected'] = $value;
                      break;
                  case 'fishing_condition':
-                     $this->log->trace('    ' . $suffix . 'fishing_condition => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'fishing_condition => ' . $value);
                      $obs[$suffix . 'fishing_condition'] = $value;
                      break;
                  case 'fishing_mark':
-                     $this->log->trace('    ' . $suffix . 'fishing_mark => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'fishing_mark => ' . $value);
                      $obs[$suffix . 'fishing_mark'] = $value;
                      break;
                  case 'fishing_foreign_body':
-                     $this->log->trace('    ' . $suffix . 'fishing_foreign_body => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'fishing_foreign_body => ' . $value);
                      $obs[$suffix . 'fishing_foreign_body'] = $value;
                      break;
                  case 'recipient':
-                     $this->log->trace('    ' . $suffix . 'recipient => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'recipient => ' . $value);
                      $obs[$suffix . 'recipient'] = $value;
                      break;
                  case 'radio':
-                     $this->log->trace('    ' . $suffix . 'radio => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'radio => ' . $value);
                      $obs[$suffix . 'radio'] = $value;
                      break;
                  case 'collision_road_type':
-                     $this->log->trace('    ' . $suffix . 'collision_road_type => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'collision_road_type => ' . $value);
                      $obs[$suffix . 'collision_road_type'] = $value;
                      break;
                  case 'collision_track_id':
-                     $this->log->trace('    ' . $suffix . 'collision_track_id => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'collision_track_id => ' . $value);
                      $obs[$suffix . 'collision_track_id'] = $value;
                      break;
                  case 'collision_km_point':
-                     $this->log->trace('    ' . $suffix . 'collision_km_point => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'collision_km_point => ' . $value);
                      $obs[$suffix . 'collision_km_point'] = $value;
                      break;
                  case 'collision_near_element':
-                     $this->log->trace('    ' . $suffix . 'collision_near_element => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'collision_near_element => ' . $value);
                      $obs[$suffix . 'collision_near_element'] = $value;
                      break;
                  case 'predation':
-                     $this->log->trace('    ' . $suffix . 'predation => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'predation => ' . $value);
                      $obs[$suffix . 'predation'] = $value;
                      break;
                  case 'response':
-                     $this->log->trace('    ' . $suffix . 'response => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'response => ' . $value);
                      $obs[$suffix . 'response'] = $value;
                      break;
                  case 'poison':
-                     $this->log->trace('    ' . $suffix . 'poison => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'poison => ' . $value);
                      $obs[$suffix . 'poison'] = $value;
                      break;
                  case 'pollution':
-                     $this->log->trace('    ' . $suffix . 'pollution => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'pollution => ' . $value);
                      $obs[$suffix . 'pollution'] = $value;
                      break;
                  default:
@@ -543,7 +544,7 @@ class StoreFile
      private function bExtendedInfoBeardedVulture($data, &$obs, $suffix)
      {
          reset($data);
-         $this->log->trace('    ' . $suffix . 'data => ' . print_r($data, true));
+         if ($this->tracing) $this->log->trace('    ' . $suffix . 'data => ' . print_r($data, true));
          return(print_r($data, true));
      }
 
@@ -563,23 +564,23 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case 'nests':
-                     $this->log->trace('    ' . $suffix . 'nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nests => ' . $value);
                      $obs[$suffix . 'nests'] = $value;
                      break;
                  case 'occupied_nests':
-                     $this->log->trace('    ' . $suffix . 'occupied_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'occupied_nests => ' . $value);
                      $obs[$suffix . 'occupied_nests'] = $value;
                      break;
                  case 'nests_is_min':
-                     $this->log->trace('    ' . $suffix . 'nests_is_min => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nests_is_min => ' . $value);
                      $obs[$suffix . 'nests_is_min'] = $value;
                      break;
                  case 'nests_is_max':
-                     $this->log->trace('    ' . $suffix . 'nests_is_max => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nests_is_max => ' . $value);
                      $obs[$suffix . 'nests_is_max'] = $value;
                      break;
                  case 'couples':
-                     $this->log->trace('    ' . $suffix . 'couples => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'couples => ' . $value);
                      $obs[$suffix . 'couples'] = $value;
                      break;
                  default:
@@ -595,75 +596,75 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case 'couples':
-                     $this->log->trace('    ' . $suffix . 'couples => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'couples => ' . $value);
                      $colonyExtended = $colonyExtended . ',couples=' . $value;
                      break;
                  case 'nests':
-                     $this->log->trace('    ' . $suffix . 'nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nests' . $value;
                      break;
                  case 'nests_is_min':
-                     $this->log->trace('    ' . $suffix . 'nests_is_min => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nests_is_min => ' . $value);
                      $colonyExtended = $colonyExtended . ',nests_is_min' . $value;
                      break;
                  case 'nests_is_max':
-                     $this->log->trace('    ' . $suffix . 'nests_is_max => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nests_is_max => ' . $value);
                      $colonyExtended = $colonyExtended . ',nests_is_max' . $value;
                      break;
                  case 'occupied_nests':
-                     $this->log->trace('    ' . $suffix . 'occupied_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'occupied_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',occupied_nests' . $value;
                      break;
                  case 'nb_natural_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_natural_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_natural_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_natural_nests=' . $value;
                      break;
                  case 'nb_natural_nests_is_min':
-                     $this->log->trace('    ' . $suffix . 'nb_natural_nests_is_min => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_natural_nests_is_min => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_natural_nests_is_min' . $value;
                      break;
                  case 'nb_natural_nests_is_max':
-                     $this->log->trace('    ' . $suffix . 'nb_natural_nests_is_max => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_natural_nests_is_max => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_natural_nests_is_max' . $value;
                      break;
                  case 'nb_natural_occup_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_natural_occup_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_natural_occup_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_natural_nests=' . $value;
                      break;
                  case 'nb_natural_other_species_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_natural_other_species_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_natural_other_species_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_natural_other_species_nests=' . $value;
                      break;
                  case 'nb_natural_destructed_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_natural_destructed_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_natural_destructed_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_natural_destructed_nests=' . $value;
                      break;
                  case 'nb_artificial_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_artificial_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_artificial_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_artificial_nests=' . $value;
                      break;
                  case 'nb_artificial_nests_is_min':
-                     $this->log->trace('    ' . $suffix . 'nb_artificial_nests_is_min => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_artificial_nests_is_min => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_artificial_nests_is_min=' . $value;
                      break;
                  case 'nb_artificial_nests_is_max':
-                     $this->log->trace('    ' . $suffix . 'nb_artificial_nests_is_max => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_artificial_nests_is_max => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_artificial_nests_is_max=' . $value;
                      break;
                  case 'nb_artificial_occup_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_artificial_occup_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_artificial_occup_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_artificial_occup_nests=' . $value;
                      break;
                  case 'nb_artificial_other_species_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_artificial_other_species_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_artificial_other_species_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_artificial_other_species_nests=' . $value;
                      break;
                  case 'nb_artificial_destructed_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_artificial_destructed_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_artificial_destructed_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_artificial_destructed_nests=' . $value;
                      break;
                  case 'nb_construction_nests':
-                     $this->log->trace('    ' . $suffix . 'nb_construction_nests => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'nb_construction_nests => ' . $value);
                      $colonyExtended = $colonyExtended . ',nb_construction_nests=' . $value;
                      break;
                  default:
@@ -680,19 +681,19 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case 'mortality':
-                     $this->log->trace('    ' . $suffix . 'mortality =>');
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'mortality =>');
                      $this->bExtendedInfoMortality($value, $obs, $suffix . $key . '_');
                      break;
                  case 'gypaetus_barbatus':
-                     $this->log->trace('    ' . $suffix . 'gypaetus_barbatus =>');
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'gypaetus_barbatus =>');
                      $this->bExtendedInfoBeardedVultures($value, $obs, $suffix . $key . '_');
                      break;
                  case 'colony':
-                     $this->log->trace('    ' . $suffix . 'colony =>');
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'colony =>');
                      $this->bExtendedInfoColony($value, $obs, $suffix . $key . '_');
                      break;
                  case 'colony_extended':
-                     $this->log->trace('    ' . $suffix . 'colony_extended => ');
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'colony_extended => ');
                      foreach ($data as $key => $value) {
                          $colonyExtended = $colonyExtended . $this->bExtendedInfoColonyExtended($value, $obs, '');
                      }
@@ -711,11 +712,11 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case '@id':
-                     $this->log->trace('    ' . $suffix . 'cause => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'cause => ' . $value);
                      $sousDetail = 'id=' . $value;
                      break;
                  case '#text':
-                     $this->log->trace('    ' . $suffix . 'cause => ' . $value);
+                     if ($this->tracing) $this->log->trace('    ' . $suffix . 'cause => ' . $value);
                      $sousDetail = 'text=' .  $value;
                      break;
              }
@@ -730,19 +731,19 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case 'count':
-                     $this->log->trace('  ' . $suffix . 'count => ' . $value);
+                     if ($this->tracing) $this->log->trace('  ' . $suffix . 'count => ' . $value);
                      $detail = $detail. ',count=' . $value;
                      break;
                  case 'age':
-                     $this->log->trace('  ' . $suffix . 'age => ' . $value['@id']);
+                     if ($this->tracing) $this->log->trace('  ' . $suffix . 'age => ' . $value['@id']);
                      $detail = $detail. ',age=' .  $value['@id'];
                      break;
                  case 'sex':
-                     $this->log->trace('  ' . $suffix . 'sex => ' . $value['@id']);
+                     if ($this->tracing) $this->log->trace('  ' . $suffix . 'sex => ' . $value['@id']);
                      $detail = $detail. ',sex=' .  $value['@id'];
                      break;
                  case 'condition':
-                     $this->log->trace('  ' . $suffix . 'condition => ' . $value['@id']);
+                     if ($this->tracing) $this->log->trace('  ' . $suffix . 'condition => ' . $value['@id']);
                      $detail = $detail. ',condition=' .  $value['@id'];
                      break;
                  case 'distance':
@@ -771,39 +772,39 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case '@id':
-                     $this->log->trace('  id_observer => ' . $data['@id']);
+                     if ($this->tracing) $this->log->trace('  id_observer => ' . $data['@id']);
                      $obs['id_observer'] = $data['@id'];
                      break;
                  case 'name':
-                     $this->log->trace('  name => ' . $data['name']);
+                     if ($this->tracing) $this->log->trace('  name => ' . $data['name']);
                      $obs['name'] = $data['name'];
                      break;
                  case 'id_sighting':
-                     $this->log->trace('  id_sighting => ' . $data['id_sighting']);
+                     if ($this->tracing) $this->log->trace('  id_sighting => ' . $data['id_sighting']);
                      $obs['id_sighting'] = $data['id_sighting'];
                      break;
                  case 'id_form':
-                     $this->log->trace('  id_form => ' . $data['@id']);
+                     if ($this->tracing) $this->log->trace('  id_form => ' . $data['@id']);
                      $obs['id_form'] = $data['@id'];
                      break;
                  case 'coord_lat':
-                     $this->log->trace('  coord_lat => ' . $data['coord_lat']);
+                     if ($this->tracing) $this->log->trace('  coord_lat => ' . $data['coord_lat']);
                      $obs['observer_coord_lat'] = $data['coord_lat'];
                      break;
                  case 'coord_lon':
-                     $this->log->trace('  coord_lon => ' . $data['coord_lon']);
+                     if ($this->tracing) $this->log->trace('  coord_lon => ' . $data['coord_lon']);
                      $obs['observer_coord_lon'] = $data['coord_lon'];
                      break;
                  case 'altitude':
-                     $this->log->trace('  altitude => ' . $data['altitude']);
+                     if ($this->tracing) $this->log->trace('  altitude => ' . $data['altitude']);
                      $obs['altitude'] = $data['altitude'];
                      break;
                  case 'precision':
-                     $this->log->trace('  precision => ' . $data['precision']);
+                     if ($this->tracing) $this->log->trace('  precision => ' . $data['precision']);
                      $obs['precision'] = $data['precision'];
                      break;
                  case 'atlas_grid_name':
-                     $this->log->trace('  atlas_grid_name => ' . $data['atlas_grid_name']);
+                     if ($this->tracing) $this->log->trace('  atlas_grid_name => ' . $data['atlas_grid_name']);
                      $obs['atlas_grid_name'] = $data['atlas_grid_name'];
                      break;
                  case 'atlas_code':
@@ -813,59 +814,59 @@ class StoreFile
                      $this->bSousDetail($value[0], $obs, 'behaviours_');
                      break;
                  case 'count':
-                     $this->log->trace('  count => ' . $data['count']);
+                     if ($this->tracing) $this->log->trace('  count => ' . $data['count']);
                      $obs['count'] = $data['count'];
                      break;
                  case 'count_string':
-                     $this->log->trace('  count_string => ' . $data['count_string']);
+                     if ($this->tracing) $this->log->trace('  count_string => ' . $data['count_string']);
                      $obs['count_string'] = $data['count_string'];
                      break;
                  case 'estimation_code':
-                     $this->log->trace('  estimation_code => ' . $data['estimation_code']);
+                     if ($this->tracing) $this->log->trace('  estimation_code => ' . $data['estimation_code']);
                      $obs['estimation_code'] = $data['estimation_code'];
                      break;
                  case 'flight_number':
-                     $this->log->trace('  flight_number => ' . $data['flight_number']);
+                     if ($this->tracing) $this->log->trace('  flight_number => ' . $data['flight_number']);
                      $obs['flight_number'] = $data['flight_number'];
                      break;
                  case 'has_death':
-                     $this->log->trace('  has_death => ' . $data['has_death']);
+                     if ($this->tracing) $this->log->trace('  has_death => ' . $data['has_death']);
                      $obs['has_death'] = $data['has_death'];
                      break;
                  case 'project_code':
-                     $this->log->trace('  project_code => ' . $data['project_code']);
+                     if ($this->tracing) $this->log->trace('  project_code => ' . $data['project_code']);
                      $obs['project_code'] = $data['project_code'];
                      break;
                  case 'admin_hidden':
-                     $this->log->trace('  admin_hidden => ' . $data['admin_hidden']);
+                     if ($this->tracing) $this->log->trace('  admin_hidden => ' . $data['admin_hidden']);
                      $obs['admin_hidden'] = $data['admin_hidden'];
                      break;
                  case 'admin_hidden_type':
-                     $this->log->trace('  admin_hidden_type => ' . $data['admin_hidden_type']);
+                     if ($this->tracing) $this->log->trace('  admin_hidden_type => ' . $data['admin_hidden_type']);
                      $obs['admin_hidden_type'] = $data['admin_hidden_type'];
                      break;
                  case 'hidden':
-                     $this->log->trace('  hidden => ' . $data['hidden']);
+                     if ($this->tracing) $this->log->trace('  hidden => ' . $data['hidden']);
                      $obs['hidden'] = $data['hidden'];
                      break;
                  case 'comment':
-                     $this->log->trace('  comment => ' . $data['comment']);
+                     if ($this->tracing) $this->log->trace('  comment => ' . $data['comment']);
                      $obs['comment'] = $data['comment'];
                      break;
                  case 'hidden_comment':
-                     $this->log->trace('  hidden_comment => ' . $data['hidden_comment']);
+                     if ($this->tracing) $this->log->trace('  hidden_comment => ' . $data['hidden_comment']);
                      $obs['hidden_comment'] = $data['hidden_comment'];
                      break;
                  case 'entity':
-                     $this->log->trace('  entity => ' . $data['entity']);
+                     if ($this->tracing) $this->log->trace('  entity => ' . $data['entity']);
                      $obs['entity'] = $data['entity'];
                      break;
                  case 'entity_fullname':
-                     $this->log->trace('  entity_fullname => ' . $data['entity_fullname']);
+                     if ($this->tracing) $this->log->trace('  entity_fullname => ' . $data['entity_fullname']);
                      $obs['entity_fullname'] = $data['entity_fullname'];
                      break;
                  case 'project':
-                     $this->log->trace('  project => ' . $data['project']);
+                     if ($this->tracing) $this->log->trace('  project => ' . $data['project']);
                      $obs['project'] = $data['project'];
                      break;
                  case 'insert_date':
@@ -887,13 +888,13 @@ class StoreFile
                      $this->bDetails($value, $obs, 'details_');
                      break;
                  case 'medias':
-                     $this->log->trace('  medias non implemented');
+                     if ($this->tracing) $this->log->trace('  medias non implemented');
                      break;
                  case '@uid':
-                     $this->log->trace('  @uid non implemented');
+                     if ($this->tracing) $this->log->trace('  @uid non implemented');
                      break;
                  case 'id_universal':
-                     $this->log->trace('  id_universal non implemented');
+                     if ($this->tracing) $this->log->trace('  id_universal non implemented');
                      break;
                  default:
                      $this->log->warn(_('  Elément observer inconnu : ') . $key . ' => ' . print_r($value, true));
@@ -915,29 +916,29 @@ class StoreFile
          foreach ($data as $key => $value) {
              switch ($key) {
                  case 'date':
-                     $this->log->trace('Elément: ' . $key);
+                     if ($this->tracing) $this->log->trace('Elément: ' . $key);
                      $this->bDate($value, $obs, '');
                      break;
                  case 'species':
-                     $this->log->trace('Elément: ' . $key);
+                     if ($this->tracing) $this->log->trace('Elément: ' . $key);
                      $this->bSpecies($value, $obs);
                      break;
                  case 'place':
-                     $this->log->trace('Elément: ' . $key);
+                     if ($this->tracing) $this->log->trace('Elément: ' . $key);
                      $this->bPlace($value, $obs);
                      break;
                  case 'observers':
-                     $this->log->trace('Elément: ' . $key);
+                     if ($this->tracing) $this->log->trace('Elément: ' . $key);
                      $this->bObservers($value, $obs);
                      break;
                  default:
                      $this->log->warn(_('Elément sighting inconnu : ') . $key);
              }
          }
-         $this->log->trace(print_r($obs, true));
+         if ($this->tracing) $this->log->trace(print_r($obs, true));
      }
 
-     public function bSightings($data, &$obsDropped, $ddlNT)
+     public function bSightings($data, $ddlNT)
      {
          $rowMin = 0; // starting record for debug
          $rowMax = 1000000000; // ending record for debug
@@ -946,13 +947,13 @@ class StoreFile
          $obsArray = array(); // Store observations per row
          reset($data);
 
-         $this->log->trace(_('Analyse d\'une observation'));
+         if ($this->tracing) $this->log->trace(_('Analyse d\'une observation'));
          foreach ($data as $key => $value) {
              $nbRow = $nbRow + 1;
              if ($nbRow < $rowMin) {
                  continue;
              }
-             $this->log->trace(_('Elément sightings numéro : ') . $nbRow);
+             if ($this->tracing) $this->log->trace(_('Elément sightings numéro : ') . $nbRow);
              // $this->log->debug(_('Elements : ') . print_r(array_keys($value, TRUE)));
              $obs = array();
              $this->bSighting($value, $obs);
@@ -964,9 +965,9 @@ class StoreFile
 
          // Create table on first pass and insert data, if sightings not empty
          if ($nbRow > 0) {
-             if ($obsDropped) {
+             if ($this->passNumber == 0) {
                  $ddlNT = $this->dba->createTable($obsArray);
-                 $obsDropped = false;
+                 $this->passNumber++;
              }
              // Insert data
              $ddlNT = $this->dba->insertRows($obsArray, $ddlNT);
@@ -975,22 +976,22 @@ class StoreFile
          return($ddlNT);
      }
 
-     public function bForms($data, &$obsDropped, $ddlNT)
+     public function bForms($data, $ddlNT)
      {
          $nbRow = 0;
          reset($data);
 
-         $this->log->trace(_('Analyse d\'un formulaire'));
+         if ($this->tracing) $this->log->trace(_('Analyse d\'un formulaire'));
          foreach ($data as $key => $value) {
              $nbRow = $nbRow + 1;
-             $this->log->trace(_('Elément forms numéro : ') . $nbRow);
+             if ($this->tracing) $this->log->trace(_('Elément forms numéro : ') . $nbRow);
              foreach ($value as $keyS => $valueS) {
                  switch ($keyS) {
                      case 'sightings':
-                         $ddlNT = $this->bSightings($valueS, $obsDropped, $ddlNT);
+                         $ddlNT = $this->bSightings($valueS, $ddlNT);
                          break;
                      default:
-                         $this->log->trace(_('Element forms non traité : ') . $keyS);
+                         if ($this->tracing) $this->log->trace(_('Element forms non traité : ') . $keyS);
                  }
              }
          }
@@ -1003,12 +1004,11 @@ class StoreFile
          $this->log->info(_('Analyse des données json de ') . $this->table);
 
          // Drop table on first loop. It will be created after parsing.
-         if (! $this->tableDropped) {
+         if ($this->passNumber == 0) {
              $this->dba->dropTable();
-             $this->tableDropped = true;
          }
 
-         $this->log->trace(_('Début de l\'analyse des ' . $this->table));
+         if ($this->tracing) $this->log->trace(_('Début de l\'analyse des ' . $this->table));
          $data = json_decode($response, true);
 
          $sightings = (is_array($data) && (array_key_exists('sightings', $data['data']))) ?
@@ -1026,13 +1026,13 @@ class StoreFile
              $this->log->debug(_('Chargement de ') . $forms . ' élements forms');
              reset($data);
              foreach ($data['data'] as $key => $value) {
-                 $this->log->trace(_('Analyse de l\'élement : ') . $key);
+                 if ($this->tracing) $this->log->trace(_('Analyse de l\'élement : ') . $key);
                  switch ($key) {
                      case 'sightings':
-                         $this->ddlNT = $this->bSightings($value, $this->tableDropped, $this->ddlNT);
+                         $this->ddlNT = $this->bSightings($value, $this->ddlNT);
                          break;
                      case 'forms':
-                         $this->ddlNT = $this->bForms($value, $this->tableDropped, $this->ddlNT);
+                         $this->ddlNT = $this->bForms($value, $this->ddlNT);
                          break;
                      default:
                          $this->log->warn(_('Element racine inconnu: ') . $key);
@@ -1043,48 +1043,6 @@ class StoreFile
 
      }
  }
-
-/**
- * Loop on json files and call parser on json structure to store in database
- *
- * @param array $dbh
- *            database handle
- * @return void
- * @author Daniel Thonon
- *
- */
-
-function observations($dbh)
-{
-    global $logger;
-    global $options;
-
-    $fileMin = 1;    // min file for debug
-    $fileMax = 3000; // max file for debug
-
-    // Create specific parser for observation data
-    $parser = new ObsParser($dbh, 'observations');
-
-    $logger->info(_('Chargement des fichiers json d\'observations'));
-
-    // Loop on dowloaded files
-    for ($fic = $fileMin; $fic < $fileMax; $fic++) {
-        if (file_exists(getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $fic . '.json')) {
-            $logger->info(
-                _('Lecture du fichier ') . getenv('HOME') . '/' .
-                $options['file_store'] . '/observations_' . $fic . '.json'
-            );
-            // Analyse du fichier
-            $response = file_get_contents(
-                getenv('HOME') . '/' .
-                $options['file_store'] . '/observations_' . $fic . '.json'
-            );
-
-            $parser->parse($response);
-
-        }
-    }
-}
 
 ///////////////////////// Main ////////////////////////////////////
 // Larger memory to handle observations
@@ -1138,50 +1096,52 @@ try {
 }
 
 // Store entities in database
-$entities = new StoreFile($dbh, 'entities', $options['file_store']);
+$entities = new StoreFile($dbh, 'entities', 'ParseData', $options['file_store']);
 $entities->store();
 unset($entities);
 
 // Store export_organizations in database
-$export_organizations = new StoreFile($dbh, 'export_organizations', $options['file_store']);
+$export_organizations = new StoreFile($dbh, 'export_organizations', 'ParseData', $options['file_store']);
 $export_organizations->store();
 unset($export_organizations);
 
 // Store families in database
-$families = new StoreFile($dbh, 'families', $options['file_store']);
+$families = new StoreFile($dbh, 'families', 'ParseData', $options['file_store']);
 $families->store();
 unset($families);
 
 // Store grids in database
-$grids = new StoreFile($dbh, 'grids', $options['file_store']);
+$grids = new StoreFile($dbh, 'grids', 'ParseData', $options['file_store']);
 $grids->store();
 unset($grids);
 
 // Store local_admin_units in database
-$local_admin_units = new StoreFile($dbh, 'local_admin_units', $options['file_store']);
+$local_admin_units = new StoreFile($dbh, 'local_admin_units', 'ParseData', $options['file_store']);
 $local_admin_units->store();
 unset($local_admin_units);
 
 // Store observations in database
-observations($dbh);
+$observations = new StoreFile($dbh, 'observations', 'ObsParser', $options['file_store']);
+$observations->store();
+unset($observations);
 
 // Store places in database
-$places = new StoreFile($dbh, 'places', $options['file_store']);
+$places = new StoreFile($dbh, 'places', 'ParseData', $options['file_store']);
 $places->store();
 unset($places);
 
 // Store species in database
-$species = new StoreFile($dbh, 'species', $options['file_store']);
+$species = new StoreFile($dbh, 'species', 'ParseData', $options['file_store']);
 $species->store();
 unset($species);
 
 // Store taxo_groups in database
-$taxo_groups = new StoreFile($dbh, 'taxo_groups', $options['file_store']);
+$taxo_groups = new StoreFile($dbh, 'taxo_groups', 'ParseData', $options['file_store']);
 $taxo_groups->store();
 unset($taxo_groups);
 
 // Store territorial_units in database
-$territorial_units = new StoreFile($dbh, 'territorial_units', $options['file_store']);
+$territorial_units = new StoreFile($dbh, 'territorial_units', 'ParseData', $options['file_store']);
 $territorial_units->store();
 unset($territorial_units);
 
