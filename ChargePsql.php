@@ -1069,7 +1069,7 @@ $options = getopt($shortOpts, $longOpts);
 $logger = Logger::getRootLogger();
 $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 
-$logger->info(_('Début de l\'import'));
+$logger->info(_('Début de l\'import - version : ') . file_get_contents('version.txt'));
 //$logger->trace(var_export($options, true));
 
 // Open database connection
