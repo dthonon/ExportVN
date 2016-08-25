@@ -62,8 +62,11 @@ class DownloadTable
     /** Holds the max number of downloads (limit for debug). */
     private $maxDowload;
 
+    /** Count number of download errors. */
+    private $nbError;
+
     /** Constructor stores parameters. */
-    public function __construct($site, $user_email, $user_pw, $table, $fileStore, $maxDowload)
+    public function __construct($site, $user_email, $user_pw, $table, $fileStore, $maxDowload = 10)
     {
         $this->log = Logger::getLogger(__CLASS__);
         $this->site = $site;
@@ -72,6 +75,7 @@ class DownloadTable
         $this->table = $table;
         $this->fileStore = $fileStore;
         $this->maxDowload = $maxDowload;
+        $this->nbError = 0;
     }
 
     function download($oauth)
@@ -97,10 +101,12 @@ class DownloadTable
             try {
                 $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
-                $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
+                // $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
                 $this->log->trace(_('Réception des données'));
                 $response = $oauth->getLastResponse();
-                $this->log->trace(_('Code retour') . print_r($oauth->getLastResponseInfo(), true));
+                $info = $oauth->getLastResponseInfo();
+                $info['url'] = $requestURI . '?xxx';
+                $this->log->trace(_('Code retour ') . print_r($info, true));
                 $respHead = $oauth->getLastResponseHeaders();
                 $this->log->trace($respHead);
                 $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
@@ -127,9 +133,20 @@ class DownloadTable
                     'pagination_key' => $key
                 );
                 $i += 1;
-            } catch (OAuthException $e) {
-                $this->log->fatal(print_r($e, true));
-                die();
+            } catch (OAuthException $oauthException) {
+                $this->nbError += 1;
+                $response = $oauth->getLastResponse();
+                $jsonError = json_decode($oauthException->lastResponse, true);
+                $this->log->error(_('Erreur de réception numéro : ') . $this->nbError . _(', code : ') . var_export($jsonError, true));
+                $info = $oauth->getLastResponseInfo();
+                $info['url'] = $requestURI . '?xxx';
+                $this->log->error(_('Code retour ') . print_r($info, true));
+                $this->log->error(_('Message d\'erreur : ') . $oauthException->getMessage());
+                if ($this->nbError > 5) {
+                    $this->log->fatal(_('Arrêt après 5 erreurs'));
+                    break;
+                }
+                sleep(10); // Wait before next request
             }
         } while ($i < $this->maxDowload); // Limit to requests, to avoid bug infinite loop
     }
@@ -296,7 +313,7 @@ function storeObservations($logger, $options, $oauth)
                     $nbError = 0; // No error: reset counter
                 }
 
-            } catch (\OAuthException $oauthException) {
+            } catch (OAuthException $oauthException) {
                 $nbError += 1;
                 $response = $oauth->getLastResponse();
                 $jsonError = json_decode($oauthException->lastResponse, true);
@@ -355,46 +372,46 @@ $local_admin_units = new DownloadTable($options['site'], $options['user_email'],
 $local_admin_units->download($oauth);
 unset($local_admin_units);
 
-// // Download and store entities in database
-// $entities = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'entities', $options['file_store'], 10);
-// $entities->download($oauth);
-// unset($entities);
-//
-// // Download and store export_organizations in database
-// $export_organizations = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'export_organizations', $options['file_store'], 10);
-// $export_organizations->download($oauth);
-// unset($export_organizations);
-//
-// // Download and store families in database
-// $families = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'families', $options['file_store'], 10);
-// $families->download($oauth);
-// unset($families);
-//
-// // Download and store grids in database
-// $grids = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'grids', $options['file_store'], 10);
-// $grids->download($oauth);
-// unset($grids);
-//
-// // Download and store places in database
-// $places = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'places', $options['file_store'], 10);
-// $places->download($oauth);
-// unset($places);
-//
-// // Download and store species in database
-// $species = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'species', $options['file_store'], 10);
-// $species->download($oauth);
-// unset($places);
-//
-// // Download and store taxo_groups in database
-// $taxo_groups = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'taxo_groups', $options['file_store'], 10);
-// $taxo_groups->download($oauth);
-// unset($places);
-//
-// // Download and store territorial_units in database
-// $territorial_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'territorial_units', $options['file_store'], 10);
-// $territorial_units->download($oauth);
-// unset($places);
-//
-// // Download and store export observations
-// $logger->info(_('Téléchargement et stockage des observations'));
-// storeObservations($logger, $options, $oauth);
+// Download and store entities in database
+$entities = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'entities', $options['file_store'], 10);
+$entities->download($oauth);
+unset($entities);
+
+// Download and store export_organizations in database
+$export_organizations = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'export_organizations', $options['file_store'], 10);
+$export_organizations->download($oauth);
+unset($export_organizations);
+
+// Download and store families in database
+$families = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'families', $options['file_store'], 10);
+$families->download($oauth);
+unset($families);
+
+// Download and store grids in database
+$grids = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'grids', $options['file_store'], 10);
+$grids->download($oauth);
+unset($grids);
+
+// Download and store places in database
+$places = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'places', $options['file_store'], 10);
+$places->download($oauth);
+unset($places);
+
+// Download and store species in database
+$species = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'species', $options['file_store'], 10);
+$species->download($oauth);
+unset($places);
+
+// Download and store taxo_groups in database
+$taxo_groups = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'taxo_groups', $options['file_store'], 10);
+$taxo_groups->download($oauth);
+unset($places);
+
+// Download and store territorial_units in database
+$territorial_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'territorial_units', $options['file_store'], 10);
+$territorial_units->download($oauth);
+unset($places);
+
+// Download and store export observations
+$logger->info(_('Téléchargement et stockage des observations'));
+storeObservations($logger, $options, $oauth);
