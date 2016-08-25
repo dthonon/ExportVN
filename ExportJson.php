@@ -100,8 +100,8 @@ class DownloadTable
             }
             try {
                 $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
-                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
-                // $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
+                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip,deflate'));
+                $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI, $params));
                 $this->log->trace(_('Réception des données'));
                 $response = $oauth->getLastResponse();
                 $info = $oauth->getLastResponseInfo();
@@ -118,7 +118,8 @@ class DownloadTable
                     $this->log->debug(_('Reçu sans clé'));
                 }
 
-                $data = json_decode($response, true);
+                //$this->log->trace(gzdecode($response));
+                $data = json_decode(gzdecode($response), true);
                 $this->log->debug(_('Reçu ') . count($data['data']) . _(' élements'));
                 if ((count($data['data']) == 0) || ($pageNum == 0)) {
                     $this->log->debug(_('Fin de réception'));
@@ -186,10 +187,10 @@ function storeTaxoGroups($logger, $options, $oauth)
         $oauth->enableDebug();
         $logger->debug(_('Demande de taxo_groups ') . $i);
         $logger->trace(_(' => params:') . print_r($params, TRUE));
-        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip,deflate'));
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace('Réception des données');
-        $response = $oauth->getLastResponse();
+        $response = gzdecode($oauth->getLastResponse());
         // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
         $respHead = $oauth->getLastResponseHeaders();
         // $logger->trace($respHead);
@@ -261,7 +262,7 @@ function storeObservations($logger, $options, $oauth)
         $nbError = 0; // Error counter to stop if to many consecutive errors
         do {
             // Get data
-            if($this->log->isTraceEnabled()) {
+            if($logger->isTraceEnabled()) {
                 $oauth->enableDebug();
             } else {
                 $oauth->disableDebug();
@@ -269,10 +270,10 @@ function storeObservations($logger, $options, $oauth)
             $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idTaxo);
             $logger->trace(_(' => params : ') . print_r($params, TRUE));
             try {
-                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip,deflate'));
                 // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
                 $logger->trace(_('Réception des données'));
-                $response = $oauth->getLastResponse();
+                $response = gzdecode($oauth->getLastResponse());
                 // $logger->trace(_('Réponse HTTP ') . print_r($oauth->getLastResponseInfo(), true));
                 $respHead = $oauth->getLastResponseHeaders();
                 // $logger->trace(_('Code HTTP ')$respHead);
