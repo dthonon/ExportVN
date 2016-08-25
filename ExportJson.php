@@ -38,7 +38,7 @@ require_once 'log4php/Logger.php';
 Logger::configure('config.xml');
 
 /**
- * Provide Download functions on a specific table.
+ * Provide download functions on a specific table.
  *
  */
 class DownloadTable
@@ -62,8 +62,11 @@ class DownloadTable
     /** Holds the max number of downloads (limit for debug). */
     private $maxDowload;
 
+    /** Count number of download errors. */
+    private $nbError;
+
     /** Constructor stores parameters. */
-    public function __construct($site, $user_email, $user_pw, $table, $fileStore, $maxDowload)
+    public function __construct($site, $user_email, $user_pw, $table, $fileStore, $maxDowload = 10)
     {
         $this->log = Logger::getLogger(__CLASS__);
         $this->site = $site;
@@ -72,6 +75,7 @@ class DownloadTable
         $this->table = $table;
         $this->fileStore = $fileStore;
         $this->maxDowload = $maxDowload;
+        $this->nbError = 0;
     }
 
     function download($oauth)
@@ -89,39 +93,61 @@ class DownloadTable
 
         do {
             // Get data
-            $oauth->enableDebug();
-            $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
-            $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
-            $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
-            $this->log->trace(_('Réception des données'));
-            $response = $oauth->getLastResponse();
-            $this->log->trace(_('Code retour') . print_r($oauth->getLastResponseInfo(), true));
-            $respHead = $oauth->getLastResponseHeaders();
-            $this->log->trace($respHead);
-            $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
-            if ($pageNum == 1) {
-                $key = rtrim($pageKey[1]);
-                $this->log->debug(_('Reçu clé = |') . $key . '|');
+            if($this->log->isTraceEnabled()) {
+                $oauth->enableDebug();
             } else {
-                $key = '';
-                $this->log->debug(_('Reçu sans clé'));
+                $oauth->disableDebug();
             }
+            try {
+                $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
+                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET);
+                // $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
+                $this->log->trace(_('Réception des données'));
+                $response = $oauth->getLastResponse();
+                $info = $oauth->getLastResponseInfo();
+                $info['url'] = $requestURI . '?xxx';
+                $this->log->trace(_('Code retour ') . print_r($info, true));
+                $respHead = $oauth->getLastResponseHeaders();
+                $this->log->trace($respHead);
+                $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
+                if ($pageNum == 1) {
+                    $key = rtrim($pageKey[1]);
+                    $this->log->debug(_('Reçu clé = |') . $key . '|');
+                } else {
+                    $key = '';
+                    $this->log->debug(_('Reçu sans clé'));
+                }
 
-            $data = json_decode($response, true);
-            $this->log->debug(_('Reçu ') . count($data['data']) . _(' élements'));
-            if ((count($data['data']) == 0) || ($pageNum == 0)) {
-                $this->log->debug(_('Fin de réception'));
-                break;
+                $data = json_decode($response, true);
+                $this->log->debug(_('Reçu ') . count($data['data']) . _(' élements'));
+                if ((count($data['data']) == 0) || ($pageNum == 0)) {
+                    $this->log->debug(_('Fin de réception'));
+                    break;
+                }
+                file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
+                // $this->log->trace(print_r($data['data'], true));
+
+                $params = array(
+                    'user_pw' => $this->user_pw,
+                    'user_email' => $this->user_email,
+                    'pagination_key' => $key
+                );
+                $i += 1;
+            } catch (OAuthException $oauthException) {
+                $this->nbError += 1;
+                $response = $oauth->getLastResponse();
+                $jsonError = json_decode($oauthException->lastResponse, true);
+                $this->log->error(_('Erreur de réception numéro : ') . $this->nbError . _(', code : ') . var_export($jsonError, true));
+                $info = $oauth->getLastResponseInfo();
+                $info['url'] = $requestURI . '?xxx';
+                $this->log->error(_('Code retour ') . print_r($info, true));
+                $this->log->error(_('Message d\'erreur : ') . $oauthException->getMessage());
+                if ($this->nbError > 5) {
+                    $this->log->fatal(_('Arrêt après 5 erreurs'));
+                    break;
+                }
+                sleep(10); // Wait before next request
             }
-            file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
-            // $this->log->trace(print_r($data['data'], true));
-
-            $params = array(
-                'user_pw' => $this->user_pw,
-                'user_email' => $this->user_email,
-                'pagination_key' => $key
-            );
-            $i += 1;
         } while ($i < $this->maxDowload); // Limit to requests, to avoid bug infinite loop
     }
 
@@ -235,7 +261,11 @@ function storeObservations($logger, $options, $oauth)
         $nbError = 0; // Error counter to stop if to many consecutive errors
         do {
             // Get data
-            $oauth->enableDebug();
+            if($this->log->isTraceEnabled()) {
+                $oauth->enableDebug();
+            } else {
+                $oauth->disableDebug();
+            }
             $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idTaxo);
             $logger->trace(_(' => params : ') . print_r($params, TRUE));
             try {
@@ -283,7 +313,7 @@ function storeObservations($logger, $options, $oauth)
                     $nbError = 0; // No error: reset counter
                 }
 
-            } catch (\OAuthException $oauthException) {
+            } catch (OAuthException $oauthException) {
                 $nbError += 1;
                 $response = $oauth->getLastResponse();
                 $jsonError = json_decode($oauthException->lastResponse, true);
@@ -325,26 +355,17 @@ $options = getopt($shortOpts, $longOpts);
 $logger = Logger::getRootLogger();
 $logger->setLevel(LoggerLevel::toLevel($options['logging']));
 
-$logger->info(_('Début de l\'export'));
+$logger->info(_('Début de l\'export - version : ') . file_get_contents('version.txt'));
 // $logger->trace(var_export($options, true));
 
 // Get authorization from Biolovision
 try {
     $logger->trace(_('Obtention de oauth'));
     $oauth = new OAuth($options['consumer_key'], $options['consumer_secret'], OAUTH_SIG_METHOD_HMACSHA1, OAUTH_AUTH_TYPE_URI);
-    // $oauth->enableDebug();
 } catch (OAuthException $e) {
-    $logger->error(print_r($e, true));
+    $logger->fatal(print_r($e, true));
     die();
 }
-
-// Download and store export taxo_groups
-// Note : also called by storeObservations, so no need to uncomment
-// $logger->info(_('Téléchargement et stockage des 'taxo_groups''));
-// $taxoList = storeTaxoGroups($logger, $options, $oauth);
-// foreach ($taxoList as $idTaxo) {
-    // $logger->trace(_('Groupe taxonomique = ') . $idTaxo);
-// }
 
 // Download and store local_admin_units in database
 $local_admin_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'local_admin_units', $options['file_store'], 10);
