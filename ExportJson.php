@@ -261,7 +261,7 @@ function storeObservations($logger, $options, $oauth)
         $nbError = 0; // Error counter to stop if to many consecutive errors
         do {
             // Get data
-            if($this->log->isTraceEnabled()) {
+            if($logger->isTraceEnabled()) {
                 $oauth->enableDebug();
             } else {
                 $oauth->disableDebug();
