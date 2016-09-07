@@ -100,7 +100,7 @@ class DownloadTable
             }
             try {
                 $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
-                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip,deflate'));
+                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
                 $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI, $params));
                 $this->log->trace(_('Réception des données'));
                 $response = $oauth->getLastResponse();
@@ -125,7 +125,7 @@ class DownloadTable
                     $this->log->debug(_('Fin de réception'));
                     break;
                 }
-                file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
+                file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $data);
                 // $this->log->trace(print_r($data['data'], true));
 
                 $params = array(
@@ -187,7 +187,7 @@ function storeTaxoGroups($logger, $options, $oauth)
         $oauth->enableDebug();
         $logger->debug(_('Demande de taxo_groups ') . $i);
         $logger->trace(_(' => params:') . print_r($params, TRUE));
-        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip,deflate'));
+        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace('Réception des données');
         $response = gzdecode($oauth->getLastResponse());
@@ -270,7 +270,7 @@ function storeObservations($logger, $options, $oauth)
             $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idTaxo);
             $logger->trace(_(' => params : ') . print_r($params, TRUE));
             try {
-                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip,deflate'));
+                $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
                 // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
                 $logger->trace(_('Réception des données'));
                 $response = gzdecode($oauth->getLastResponse());
