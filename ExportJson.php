@@ -103,7 +103,7 @@ class DownloadTable
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
                 $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI, $params));
                 $this->log->trace(_('Réception des données'));
-                $response = $oauth->getLastResponse();
+                $response = gzdecode($oauth->getLastResponse());
                 $info = $oauth->getLastResponseInfo();
                 $info['url'] = $requestURI . '?xxx';
                 $this->log->trace(_('Code retour ') . print_r($info, true));
@@ -118,14 +118,14 @@ class DownloadTable
                     $this->log->debug(_('Reçu sans clé'));
                 }
 
-                //$this->log->trace(gzdecode($response));
-                $data = json_decode(gzdecode($response), true);
+                //$this->log->trace($response);
+                $data = json_decode($response, true);
                 $this->log->debug(_('Reçu ') . count($data['data']) . _(' élements'));
                 if ((count($data['data']) == 0) || ($pageNum == 0)) {
                     $this->log->debug(_('Fin de réception'));
                     break;
                 }
-                file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $data);
+                file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
                 // $this->log->trace(print_r($data['data'], true));
 
                 $params = array(
