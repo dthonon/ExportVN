@@ -333,7 +333,7 @@ function storeObservations($logger, $options, $oauth)
 
 // ///////////////////////// Main ////////////////////////////////////
 // Larger memory to handle observations
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M');
 
 // Define command line options
 $shortOpts = ''; // No short form options
