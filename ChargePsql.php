@@ -65,22 +65,30 @@ class DbAccess
     /**
      * Finds the type of the value, based on its format
      *
+     * @param string $name
+     *            The column name, to handle special cases
      * @param string $val
      *            The value to be parsed
      * @return string The ddl type of $val
      * @author Daniel Thonon
      *
      */
-    private function typeOfValue($val)
+    private function typeOfValue($name, $val)
     {
-        if (preg_match('/^-?\d+$/', $val) == 1) {
-            return 'integer';
-        } elseif (preg_match('/^-?\d+\.\d+$/', $val) == 1) {
-            return 'double precision';
-        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:.*$/', $val) == 1) {
-            return 'timestamp with time zone';
-        } else {
+        if (preg_match('/^extended.*$/', $name) == 1) {
+            // All extended colums are character
             return 'character varying';
+        } else {
+            // Analyze value for type
+            if (preg_match('/^-?\d+$/', $val) == 1) {
+                return 'integer';
+            } elseif (preg_match('/^-?\d+\.\d+$/', $val) == 1) {
+                return 'double precision';
+            } elseif (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:.*$/', $val) == 1) {
+                return 'timestamp with time zone';
+            } else {
+                return 'character varying';
+            }
         }
     }
 
@@ -101,7 +109,7 @@ class DbAccess
         reset($data);
         // Find the types
         foreach ($data[count($data) - 1] as $key => $value) {
-            $ddl[$key] = $this->typeOfValue($value);
+            $ddl[$key] = $this->typeOfValue($key, $value);
         }
         $this->log->trace(print_r($ddl, true));
         return $ddl;
@@ -137,11 +145,11 @@ class DbAccess
                     $this->log->debug(_('Colonne absente de la table : ') . $k);
                     // Creation of the new column, outside of insertion transaction
                     $this->dbh->commit();
-                    $ddlStmt = $k . ' ' . $this->typeOfValue($v) . ';';
+                    $ddlStmt = $k . ' ' . $this->typeOfValue($k, $v) . ';';
                     $ddlStmt = 'ALTER TABLE ' . $this->table . ' ADD COLUMN ' . $ddlStmt;
                     $this->log->debug(_('Modification de la table ') . $ddlStmt);
                     $this->dbh->exec($ddlStmt);
-                    $ddlNT[$k] = $this->typeOfValue($v); // Update column list
+                    $ddlNT[$k] = $this->typeOfValue($k, $v); // Update column list
                     $this->dbh->beginTransaction();
                 }
 
