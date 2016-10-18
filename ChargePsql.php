@@ -740,22 +740,22 @@ class StoreFile
              switch ($key) {
                  case 'count':
                      if ($this->tracing) $this->log->trace('  ' . $suffix . 'count => ' . $value);
-                     $detail = $detail. ',count=' . $value;
+                     $detail = $detail . ',count=' . $value;
                      break;
                  case 'age':
                      if ($this->tracing) $this->log->trace('  ' . $suffix . 'age => ' . $value['@id']);
-                     $detail = $detail. ',age=' .  $value['@id'];
+                     $detail = $detail . ',age=' .  $value['@id'];
                      break;
                  case 'sex':
                      if ($this->tracing) $this->log->trace('  ' . $suffix . 'sex => ' . $value['@id']);
-                     $detail = $detail. ',sex=' .  $value['@id'];
+                     $detail = $detail . ',sex=' .  $value['@id'];
                      break;
                  case 'condition':
                      if ($this->tracing) $this->log->trace('  ' . $suffix . 'condition => ' . $value['@id']);
-                     $detail = $detail. ',condition=' .  $value['@id'];
+                     $detail = $detail . ',condition=' .  $value['@id'];
                      break;
                  case 'distance':
-                     $detail = $detail. ',distance=' . $this->bSousDetail($value, $obs, $suffix . $key . '_');
+                     $detail = $detail . ',distance=' . $this->bSousDetail($value, $obs, $suffix . $key . '_');
                      break;
                  default:
                      $this->log->warn(_('  Elément detail inconnu : ') . $key . ' => ' . print_r($value, true));
@@ -770,6 +770,17 @@ class StoreFile
          $details = '';
          foreach ($data as $key => $value) {
              $details = $details . $this->bDetail($value, $obs, '');
+         }
+         $obs[$suffix . 'list'] = $details;
+     }
+
+     private function bBehaviours($data, &$obs, $suffix)
+     {
+         reset($data);
+         $details = '';
+         foreach ($data as $key => $value) {
+             if ($this->tracing) $this->log->trace('  ' . $suffix . 'text => ' . $value['#text']);
+             $details = $details . $value['#text'] . " ; ";
          }
          $obs[$suffix . 'list'] = $details;
      }
@@ -816,10 +827,11 @@ class StoreFile
                      $obs['atlas_grid_name'] = $data['atlas_grid_name'];
                      break;
                  case 'atlas_code':
-                     $this->bSousDetail($value, $obs, 'atlas_code_');
+                     if ($this->tracing) $this->log->trace('  atlas_code => ' . $data['atlas_code']['#text']);
+-                    $obs['atlas_code'] = $data['atlas_code']['#text'];
                      break;
                  case 'behaviours':
-                     $this->bSousDetail($value[0], $obs, 'behaviours_');
+                     $this->bBehaviours($data['behaviours'], $obs, 'behaviours_');
                      break;
                  case 'count':
                      if ($this->tracing) $this->log->trace('  count => ' . $data['count']);

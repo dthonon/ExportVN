@@ -94,22 +94,24 @@ case "$cmd" in
         echo "evn_db_user=$evn_db_user" >> $evn_conf
         read -e -p "Mot de passe de la base postgresql : " -i "${config[evn_db_pw]}" evn_db_pw
         echo "evn_db_pw=$evn_db_pw" >> $evn_conf
+        read -e -p "Répertoire des fichiers scripts sql spécifiques : " -i "${config[evn_sql_scripts]}" evn_sql_scripts
+        echo "evn_sql_scripts=$evn_sql_scripts" >> $evn_conf
 
         read -e -p "Niveau de logging [TRACE/DEBUG/INFO] : " -i "${config[evn_logging]}" evn_logging
         echo "evn_logging=$evn_logging" >> $evn_conf
      ;;
 
     init)
-        cp InitDB.sql InitDB.tmp
-        sed -i -e "s/evn_db_name/${config[evn_db_name]}/" InitDB.tmp
-        sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" InitDB.tmp
-        sed -i -e "s/evn_db_group/${config[evn_db_group]}/" InitDB.tmp
-        sed -i -e "s/evn_db_user/${config[evn_db_user]}/" InitDB.tmp
-        sed -i -e "s/evn_db_pw/${config[evn_db_pw]}/" InitDB.tmp
-        mv InitDB.tmp Init_${config[evn_db_name]}.sql
+        cp InitDB.sql ~/${config[evn_sql_scripts]}/InitDB.tmp
+        sed -i -e "s/evn_db_name/${config[evn_db_name]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
+        sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
+        sed -i -e "s/evn_db_group/${config[evn_db_group]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
+        sed -i -e "s/evn_db_user/${config[evn_db_user]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
+        sed -i -e "s/evn_db_pw/${config[evn_db_pw]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
+        mv ~/${config[evn_sql_scripts]}/InitDB.tmp ~/${config[evn_sql_scripts]}/Init_${config[evn_db_name]}.sql
 
         echo "Pour (re)créer la base de données, exécutez la commande suivante depuis le compte postgres"
-        echo "$ psql -f $(pwd)/Init_${config[evn_db_name]}.sql"
+        echo "$ psql -f $(pwd)/${config[evn_sql_scripts]}/Init_${config[evn_db_name]}.sql"
     ;;
 
     download)

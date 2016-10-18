@@ -1,4 +1,5 @@
-Procédure d'installation sur Linux
+Procédure d'installation sur Linux.
+Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
 
 1) Préparer l'installation
     CentOS 7 :
