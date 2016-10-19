@@ -7,7 +7,8 @@
 #          - config => Configure parameters for scripts (sites, passwords...).
 #          - init => Prepare DB init script.
 #          - download => Export from VisioNature fo json files, using API.
-#          - load => Load json files in Postgresql.
+#          - store => Load json files in Postgresql.
+#          - all => download then store
 #
 # Copyright (c) 2016, Daniel Thonon
 #  All rights reserved.
@@ -66,7 +67,6 @@ fi
 
 case "$cmd" in
     config)
-
         read -e -p "Site VisioNature : " -i "${config[evn_site]}" evn_site
         echo "evn_site=$evn_site" > $evn_conf
         read -e -p "Compte VisioNature : " -i "${config[evn_user_email]}" evn_user_email
@@ -99,7 +99,7 @@ case "$cmd" in
 
         read -e -p "Niveau de logging [TRACE/DEBUG/INFO] : " -i "${config[evn_logging]}" evn_logging
         echo "evn_logging=$evn_logging" >> $evn_conf
-     ;;
+        ;;
 
     init)
         cp InitDB.sql ~/${config[evn_sql_scripts]}/InitDB.tmp
@@ -112,52 +112,62 @@ case "$cmd" in
 
         echo "Pour (re)créer la base de données, exécutez la commande suivante depuis le compte postgres"
         echo "$ psql -f $(pwd)/${config[evn_sql_scripts]}/Init_${config[evn_db_name]}.sql"
-    ;;
+        ;;
 
     download)
-        echo "Téléchargement depuis le site : ${config[evn_site]} à $(date)"
+        echo "$(date) - INFO - Téléchargement depuis le site : ${config[evn_site]} à $(date)"
         # Remove previous downloaded files
-        echo "Suppression des fichiers précédents"
+        echo "$(date) - INFO - Suppression des fichiers précédents"
         rm -f ~/${config[evn_file_store]}/*.json
 
         # Download from biolovision and store in json
         php ExportJson.php \
-            --site=${config[evn_site]} \
-            --user_email=${config[evn_user_email]} \
-            --user_pw=${config[evn_user_pw]} \
-            --consumer_key=${config[evn_consumer_key]} \
-            --consumer_secret=${config[evn_consumer_secret]} \
-            --file_store=${config[evn_file_store]} \
-            --logging=${config[evn_logging]}
+        --site=${config[evn_site]} \
+        --user_email=${config[evn_user_email]} \
+        --user_pw=${config[evn_user_pw]} \
+        --consumer_key=${config[evn_consumer_key]} \
+        --consumer_secret=${config[evn_consumer_secret]} \
+        --file_store=${config[evn_file_store]} \
+        --logging=${config[evn_logging]}
 
-        echo "Fin de l'export à $(date)"
-     ;;
+        echo "$(date) - INFO - Fin de l'export"
+        ;;
 
     store)
-        echo "Chargement des fichiers json dans la base ${config[evn_db_name]} à $(date)"
+        echo "$(date) - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
         php ChargePsql.php \
-            --db_host=${config[evn_db_host]} \
-            --db_port=${config[evn_db_port]} \
-            --db_name=${config[evn_db_name]} \
-            --db_schema=${config[evn_db_schema]} \
-            --db_user=${config[evn_db_user]} \
-            --db_pw=${config[evn_db_pw]}\
-            --file_store=${config[evn_file_store]} \
-            --logging=${config[evn_logging]}
+        --db_host=${config[evn_db_host]} \
+        --db_port=${config[evn_db_port]} \
+        --db_name=${config[evn_db_name]} \
+        --db_schema=${config[evn_db_schema]} \
+        --db_user=${config[evn_db_user]} \
+        --db_pw=${config[evn_db_pw]}\
+        --file_store=${config[evn_file_store]} \
+        --logging=${config[evn_logging]}
 
-        echo "Finalisation de la base de données"
+        echo "$(date) - INFO - Finalisation de la base de données"
         echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
         chmod 0600 ~/.pgpass
         env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
-         psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} -d "dbname=${config[evn_db_name]}" -f ChargePsql.sql
+        psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} -d "dbname=${config[evn_db_name]}" -f ChargePsql.sql
         rm -f ~/.pgpass
-        echo "Fin du chargement à $(date)"
+        echo "$(date) - INFO - Fin du chargement dans la base "
+        ;;
 
-     ;;
+    all)
+        if [[ -f ../evn_all.log ]]  # Check if exists and move
+        then
+            mv ../evn_all.log ../evn_all.log.1
+        fi
+        # echo "Téléchargement depuis le site : ${config[evn_site]} à $(date)"
+        $0 download > ../evn_all.log
+        # echo "Chargement des fichiers json dans la base ${config[evn_db_name]} à $(date)"
+        $0 store >> ../evn_all.log
+        ;;
 
-   *)
-    echo "Usage: $SCRIPTNAME {config|init|download|store}" >&2
-     ;;
+    *)
+        echo "Usage: $SCRIPTNAME {config|init|download|store|all}" >&2
+        ;;
 
 esac
 

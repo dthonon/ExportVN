@@ -268,7 +268,7 @@ class ParseData
 
     public function parse($response)
     {
-        $this->log->info(_('Analyse des données json de ') . $this->table);
+        $this->log->debug(_('Analyse des données json de ') . $this->table);
 
         $this->log->trace(_('Début de l\'analyse des ' . $this->table));
         $data = json_decode($response, true);
@@ -332,7 +332,7 @@ class StoreFile
 
     public function store()
     {
-        $this->log->info(_('Chargement des fichiers json de ') . $this->table);
+        $this->log->debug(_('Chargement des fichiers json de ') . $this->table);
 
         // Loop on dowloaded files
         for ($fic = $this->fileMin; $fic < $this->fileMax; $fic++) {
@@ -1021,7 +1021,7 @@ class StoreFile
 
      public function parse($response)
      {
-         $this->log->info(_('Analyse des données json de ') . $this->table);
+         $this->log->debug(_('Analyse des données json de ') . $this->table);
 
          // Drop table on first loop. It will be created after parsing.
          if ($this->passNumber == 0) {
@@ -1058,7 +1058,7 @@ class StoreFile
                          $this->log->warn(_('Element racine inconnu: ') . $key);
                  }
              }
-             $this->log->info(_('Fin de l\'analyse d\'un fichier d\'observations'));
+             $this->log->debug(_('Fin de l\'analyse d\'un fichier d\'observations'));
          }
 
      }
