@@ -102,6 +102,17 @@ case "$cmd" in
         ;;
 
     init)
+        # Create directories as needed
+        if [[ ! -d ~/${config[evn_file_store]} ]]
+        then
+            mkdir ~/${config[evn_file_store]}
+        fi
+        if [[ ! -d ~/${config[evn_sql_scripts]} ]]
+        then
+            mkdir ~/${config[evn_sql_scripts]}
+        fi
+
+        # Prepare SQL init script
         cp InitDB.sql ~/${config[evn_sql_scripts]}/InitDB.tmp
         sed -i -e "s/evn_db_name/${config[evn_db_name]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
         sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp

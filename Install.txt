@@ -36,13 +36,15 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
         $ ./evn.sh init
         puis exécuter le script depuis le compte postgres
 
-6) Optionnel : pour formatter (PrettyPrint.sh) les fichiers json
+6) Utilisation
+    CentOS 7 et Ubuntu 16.04 :
+        $ ./evn.sh download
+        $ ./env.sh store
+
+Optionnel : pour formatter (PrettyPrint.sh) les fichiers json
     CentOS 7 :
         $ sudo yum install yajl
     Ubuntu 16.04 :
         $ sudo apt install yajl-tools
-
-7) Utilisation
-    CentOS 7 et Ubuntu 16.04 :
-        $ ./evn.sh download
-        $ ./env.sh store
+    $ mkdir ../json2
+    $ ./PrettyPrint.sh
