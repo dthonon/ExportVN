@@ -115,9 +115,9 @@ case "$cmd" in
         ;;
 
     download)
-        echo "$(date) - INFO - Téléchargement depuis le site : ${config[evn_site]} à $(date)"
+        echo "$(date '+%F %T') - INFO - Téléchargement depuis le site : ${config[evn_site]} à $(date)"
         # Remove previous downloaded files
-        echo "$(date) - INFO - Suppression des fichiers précédents"
+        echo "$(date '+%F %T') - INFO - Suppression des fichiers précédents"
         rm -f ~/${config[evn_file_store]}/*.json
 
         # Download from biolovision and store in json
@@ -130,11 +130,11 @@ case "$cmd" in
         --file_store=${config[evn_file_store]} \
         --logging=${config[evn_logging]}
 
-        echo "$(date) - INFO - Fin de l'export"
+        echo "$(date '+%F %T') - INFO - Fin de l'export"
         ;;
 
     store)
-        echo "$(date) - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
+        echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
         php ChargePsql.php \
         --db_host=${config[evn_db_host]} \
         --db_port=${config[evn_db_port]} \
@@ -145,13 +145,13 @@ case "$cmd" in
         --file_store=${config[evn_file_store]} \
         --logging=${config[evn_logging]}
 
-        echo "$(date) - INFO - Finalisation de la base de données"
+        echo "$(date '+%F %T') - INFO - Finalisation de la base de données"
         echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
         chmod 0600 ~/.pgpass
         env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
         psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} -d "dbname=${config[evn_db_name]}" -f ChargePsql.sql
         rm -f ~/.pgpass
-        echo "$(date) - INFO - Fin du chargement dans la base "
+        echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
 
     all)
