@@ -38,6 +38,9 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
 
 6) Utilisation
     CentOS 7 et Ubuntu 16.04 :
+        $ ./evn.sh all
+
+    Il est aussi possible de procéder par étape :
         $ ./evn.sh download
         $ ./env.sh store
 
