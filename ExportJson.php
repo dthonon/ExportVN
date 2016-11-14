@@ -60,13 +60,13 @@ class DownloadTable
     private $fileStore;
 
     /** Holds the max number of downloads (limit for debug). */
-    private $maxDowload;
+    private $maxDownload;
 
     /** Count number of download errors. */
     private $nbError;
 
     /** Constructor stores parameters. */
-    public function __construct($site, $user_email, $user_pw, $table, $fileStore, $maxDowload = 10)
+    public function __construct($site, $user_email, $user_pw, $table, $fileStore, $maxDownload = 10)
     {
         $this->log = Logger::getLogger(__CLASS__);
         $this->site = $site;
@@ -74,7 +74,7 @@ class DownloadTable
         $this->user_pw = $user_pw;
         $this->table = $table;
         $this->fileStore = $fileStore;
-        $this->maxDowload = $maxDowload;
+        $this->maxDowload = $maxDownload;
         $this->nbError = 0;
     }
 
@@ -101,14 +101,22 @@ class DownloadTable
             try {
                 $this->log->debug(_('Demande de ') . $this->table . ' n° ' . $i . ', API = ' . $requestURI);
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
-                $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI, $params));
+                // $this->log->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI, $params));
                 $this->log->trace(_('Réception des données'));
-                $response = gzdecode($oauth->getLastResponse());
                 $info = $oauth->getLastResponseInfo();
                 $info['url'] = $requestURI . '?xxx';
-                $this->log->trace(_('Code retour ') . print_r($info, true));
+                // $this->log->trace(_('LastResponseInfo: ') . print_r($info, true));
                 $respHead = $oauth->getLastResponseHeaders();
-                $this->log->trace($respHead);
+                // $this->log->trace('LastResponseHeaders: ' . $respHead);
+                // $this->log->trace('LastResponse: ' . $oauth->getLastResponse());
+                if (array_key_exists('content_encoding', $info) && $info['content_encoding'] == 'gzip') {
+                    $this->log->trace('Response compressed by gzip');
+                    $response = gzdecode($oauth->getLastResponse());
+                } else {
+                    $this->log->trace('Response not compressed');
+                    $response = $oauth->getLastResponse();
+                }
+
                 $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
                 if ($pageNum == 1) {
                     $key = rtrim($pageKey[1]);
@@ -190,7 +198,13 @@ function storeTaxoGroups($logger, $options, $oauth)
         $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
         // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
         $logger->trace('Réception des données');
-        $response = gzdecode($oauth->getLastResponse());
+        $info = $oauth->getLastResponseInfo();
+        $info['url'] = $requestURI . '?xxx';
+        if (array_key_exists('content_encoding', $info) && $info['content_encoding'] == 'gzip') {
+            $response = gzdecode($oauth->getLastResponse());
+        } else {
+            $response = $oauth->getLastResponse();
+        }
         // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
         $respHead = $oauth->getLastResponseHeaders();
         // $logger->trace($respHead);
@@ -273,7 +287,13 @@ function storeObservations($logger, $options, $oauth)
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
                 // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
                 $logger->trace(_('Réception des données'));
-                $response = gzdecode($oauth->getLastResponse());
+                $info = $oauth->getLastResponseInfo();
+                $info['url'] = $requestURI . '?xxx';
+                if (array_key_exists('content_encoding', $info) && $info['content_encoding'] == 'gzip') {
+                    $response = gzdecode($oauth->getLastResponse());
+                } else {
+                    $response = $oauth->getLastResponse();
+                }
                 // $logger->trace(_('Réponse HTTP ') . print_r($oauth->getLastResponseInfo(), true));
                 $respHead = $oauth->getLastResponseHeaders();
                 // $logger->trace(_('Code HTTP ')$respHead);
