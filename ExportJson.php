@@ -81,7 +81,7 @@ function storeTaxoGroups($logger, $options, $oauth)
             $logger->debug(_('Reçu contenu non compressé'));
             $response = $oauth->getLastResponse();
         }
-        // $logger->trace(print_r($oauth->getLastResponseInfo(), true));
+        $logger->trace(print_r($oauth->getLastResponseInfo(), true));
         $respHead = $oauth->getLastResponseHeaders();
         // $logger->trace($respHead);
         // Find pagination_key for further request
@@ -251,7 +251,7 @@ class DownloadTable
                     $this->log->trace(_('Réception des données'));
                     $info = $oauth->getLastResponseInfo();
                     $info['url'] = $requestURI . '?xxx';
-                    // $this->log->trace(_('LastResponseInfo: ') . print_r($info, true));
+                    $this->log->trace(_('LastResponseInfo: ') . print_r($info, true));
                     $respHead = $oauth->getLastResponseHeaders();
                     // $this->log->trace('LastResponseHeaders: ' . $respHead);
                     // $this->log->trace('LastResponse: ' . $oauth->getLastResponse());

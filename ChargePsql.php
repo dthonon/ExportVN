@@ -40,6 +40,55 @@ require_once 'log4php/Logger.php';
 Logger::configure('config.xml');
 
 /**
+ * Totalizer of db insertions per file analyzed
+ *
+ */
+class DbInsertCounter
+{
+    /** Holds the Logger. */
+    private $log;
+
+    /** Holds the insert count */
+    private $inserts;
+
+    /** Constructor stores parameters. */
+    public function __construct()
+    {
+        $this->log = Logger::getLogger(__CLASS__);
+        $this->inserts = 0;
+    }
+
+    /**
+     * Increment insertion counter
+     *
+     * @param integer $nbLines
+     *            Number of inserted rows
+     * @author Daniel Thonon
+     *
+     */
+    public function insertRows($nbLines)
+    {
+        $this->inserts = $this->inserts + $nbLines;
+    }
+
+    /**
+     * Return insertion counter
+     *
+     * @return integer
+     *            Number of inserted rows
+     * @author Daniel Thonon
+     *
+     */
+    public function NbInserted()
+    {
+        return $this->inserts;
+    }
+
+}
+
+$DbInsertions = array();
+
+/**
  * Provide access functions to the database.
  *
  */
@@ -69,7 +118,8 @@ class DbAccess
      *            The column name, to handle special cases
      * @param string $val
      *            The value to be parsed
-     * @return string The ddl type of $val
+     * @return string
+     *            The ddl type of $val
      * @author Daniel Thonon
      *
      */
@@ -127,9 +177,9 @@ class DbAccess
      * @author Daniel Thonon
      *
      */
-    public function insertRows($data, $ddlNT)
+    public function insertRows($data, $ddlNT, $insertCounter)
     {
-        $this->log->debug('Insertion des lignes dans ' . $this->table);
+        $this->log->trace('Insertion des lignes dans ' . $this->table);
         $this->dbh->beginTransaction();
         // Loop over each data element
         $nbLines = 0;
@@ -177,6 +227,7 @@ class DbAccess
             );
         }
         $this->dbh->commit();
+        $insertCounter->insertRows($nbLines);
         $this->log->debug($nbLines . _(' lignes insérées dans ') . $this->table);
         return $ddlNT;
     }
@@ -266,7 +317,7 @@ class ParseData
      *
      */
 
-    public function parse($response)
+    public function parse($response, $insertCounter)
     {
         $this->log->debug(_('Analyse des données json de ') . $this->table);
 
@@ -280,7 +331,7 @@ class ParseData
             $this->passNumber++;
         }
         // Insert rows
-        $this->ddlNT = $this->dba->insertRows($data['data'], $this->ddlNT);
+        $this->ddlNT = $this->dba->insertRows($data['data'], $this->ddlNT, $insertCounter);
     }
 }
 
@@ -332,6 +383,8 @@ class StoreFile
 
     public function store()
     {
+        global $DbInsertions;
+
         $this->log->debug(_('Chargement des fichiers json de ') . $this->table);
 
         // Loop on dowloaded files
@@ -341,7 +394,11 @@ class StoreFile
                 // Analyse du fichier
                 $response = file_get_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
 
-                $this->parser->parse($response);
+                // Create insertion counter (for debug)
+                $DbInsertions[$this->table . '_' . $fic . '.json'] = new DbInsertCounter();
+
+                // Parse JSON file
+                $this->parser->parse($response, $DbInsertions[$this->table . '_' . $fic . '.json']);
             }
         }
     }
@@ -958,7 +1015,7 @@ class StoreFile
          if ($this->tracing) $this->log->trace(print_r($obs, true));
      }
 
-     public function bSightings($data, $ddlNT)
+     public function bSightings($data, $ddlNT, $insertCounter)
      {
          $rowMin = 0; // starting record for debug
          $rowMax = 1000000000; // ending record for debug
@@ -990,13 +1047,13 @@ class StoreFile
                  $this->passNumber++;
              }
              // Insert data
-             $ddlNT = $this->dba->insertRows($obsArray, $ddlNT);
+             $ddlNT = $this->dba->insertRows($obsArray, $ddlNT, $insertCounter);
          }
 
          return($ddlNT);
      }
 
-     public function bForms($data, $ddlNT)
+     public function bForms($data, $ddlNT, $insertCounter)
      {
          $nbRow = 0;
          reset($data);
@@ -1008,7 +1065,7 @@ class StoreFile
              foreach ($value as $keyS => $valueS) {
                  switch ($keyS) {
                      case 'sightings':
-                         $ddlNT = $this->bSightings($valueS, $ddlNT);
+                         $ddlNT = $this->bSightings($valueS, $ddlNT, $insertCounter);
                          break;
                      default:
                          if ($this->tracing) $this->log->trace(_('Element forms non traité : ') . $keyS);
@@ -1019,7 +1076,7 @@ class StoreFile
          return($ddlNT);
      }
 
-     public function parse($response)
+     public function parse($response, $insertCounter)
      {
          $this->log->debug(_('Analyse des données json de ') . $this->table);
 
@@ -1049,10 +1106,10 @@ class StoreFile
                  if ($this->tracing) $this->log->trace(_('Analyse de l\'élement : ') . $key);
                  switch ($key) {
                      case 'sightings':
-                         $this->ddlNT = $this->bSightings($value, $this->ddlNT);
+                         $this->ddlNT = $this->bSightings($value, $this->ddlNT, $insertCounter);
                          break;
                      case 'forms':
-                         $this->ddlNT = $this->bForms($value, $this->ddlNT);
+                         $this->ddlNT = $this->bForms($value, $this->ddlNT, $insertCounter);
                          break;
                      default:
                          $this->log->warn(_('Element racine inconnu: ') . $key);
@@ -1167,3 +1224,8 @@ unset($territorial_units);
 
 // Close database connection
 unset($dbh);
+
+// Print summary of DB insertions
+foreach ($DbInsertions as $file => $ins){
+    $logger->debug(_('Insertion de ' . $ins->NbInserted() . " lignes depuis le fichier " . $file));
+}
