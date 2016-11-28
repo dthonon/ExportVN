@@ -33,7 +33,6 @@
  *
  */
 
-
 require_once 'log4php/Logger.php';
 
 // Configure root logger
@@ -391,9 +390,12 @@ class StoreFile
         for ($fic = $this->fileMin; $fic < $this->fileMax; $fic++) {
             if (file_exists(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json')) {
                 $this->log->info(_('Lecture du fichier ') . getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
-                // Analyse du fichier
+                // Read stored json file
                 $response = file_get_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
 
+                // Correct missing comment value (incorrect character)
+                $response = str_replace('"comment": ,' ,'' , $response);
+                
                 // Create insertion counter (for debug)
                 $DbInsertions[$this->table . '_' . $fic . '.json'] = new DbInsertCounter();
 
