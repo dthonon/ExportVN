@@ -395,7 +395,7 @@ class StoreFile
 
                 // Correct missing comment value (incorrect character)
                 $response = str_replace('"comment": ,' ,'' , $response);
-                
+
                 // Create insertion counter (for debug)
                 $DbInsertions[$this->table . '_' . $fic . '.json'] = new DbInsertCounter();
 
@@ -814,7 +814,14 @@ class StoreFile
                      $detail = $detail . ',condition=' .  $value['@id'];
                      break;
                  case 'distance':
-                     $detail = $detail . ',distance=' . $this->bSousDetail($value, $obs, $suffix . $key . '_');
+                     if ($this->tracing) $this->log->trace('  ' . $suffix . 'distance => ' . $value['@id']);
+                     $detail = $detail . ',distance=' .  $value['@id'];
+                     // $detail = $detail . ',distance=' . $this->bSousDetail($value, $obs, $suffix . $key . '_');
+                     break;
+                case 'section':
+                    if ($this->tracing) $this->log->trace('  ' . $suffix . 'section => ' . $value['@id']);
+                    $detail = $detail . ',section=' .  $value['@id'];
+                     // $detail = $detail . ',section=' . $this->bSousDetail($value, $obs, $suffix . $key . '_');
                      break;
                  default:
                      $this->log->warn(_('  Elément detail inconnu : ') . $key . ' => ' . print_r($value, true));

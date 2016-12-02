@@ -6,6 +6,7 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
         $ sudo yum install epel-release
         $ sudo yum update
         $ sudo yum install git
+        $ sudo yum install mailx
 
     Ubuntu 16.04 :
         $ sudo apt install git

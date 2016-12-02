@@ -37,9 +37,18 @@
 
 cmd=$1
 
+# When running from crontab. To be improved
+cd ~/ExportVN
+
+# Logging file
+evn_log=~/evn_all.log
+
+# Default mail address for results mail, overriden by config file
+config[evn_admin_mail]="d.thonon9@gmail.com"
+
 # Load configuration file, if present, else ask for configuration
 evn_conf=~/.evn.conf
-unset config # clear parameter array
+unset config      # clear parameter array
 typeset -A config # init array
 
 # echo "commande = $cmd"
@@ -97,6 +106,9 @@ case "$cmd" in
         read -e -p "Répertoire des fichiers scripts sql spécifiques : " -i "${config[evn_sql_scripts]}" evn_sql_scripts
         echo "evn_sql_scripts=$evn_sql_scripts" >> $evn_conf
 
+        read -e -p "Destinataire des mails de suivi : " -i "${config[evn_admin_mail]}" evn_admin_mail
+        echo "evn_admin_mail=$evn_admin_mail" >> $evn_conf
+
         read -e -p "Niveau de logging [TRACE/DEBUG/INFO] : " -i "${config[evn_logging]}" evn_logging
         echo "evn_logging=$evn_logging" >> $evn_conf
         ;;
@@ -132,7 +144,7 @@ case "$cmd" in
         rm -f ~/${config[evn_file_store]}/*.json
 
         # Download from biolovision and store in json
-        php ExportJson.php \
+        php ~/ExportVN/ExportJson.php \
         --site=${config[evn_site]} \
         --user_email=${config[evn_user_email]} \
         --user_pw=${config[evn_user_pw]} \
@@ -146,7 +158,7 @@ case "$cmd" in
 
     store)
         echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
-        php ChargePsql.php \
+        php ~/ExportVN/ChargePsql.php \
         --db_host=${config[evn_db_host]} \
         --db_port=${config[evn_db_port]} \
         --db_name=${config[evn_db_name]} \
@@ -160,20 +172,23 @@ case "$cmd" in
         echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
         chmod 0600 ~/.pgpass
         env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
-        psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} -d "dbname=${config[evn_db_name]}" -f ChargePsql.sql
+            psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
+            -d "dbname=${config[evn_db_name]}" -f ~/ExportVN/ChargePsql.sql
         rm -f ~/.pgpass
         echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
 
     all)
-        if [[ -f ../evn_all.log ]]  # Check if exists and move
+        if [[ -f $evn_log ]]  # Check if exists and move
         then
-            mv ../evn_all.log ../evn_all.log.1
+            mv $evn_log $evn_log.1
         fi
-        # echo "Téléchargement depuis le site : ${config[evn_site]} à $(date)"
-        $0 download > ../evn_all.log
-        # echo "Chargement des fichiers json dans la base ${config[evn_db_name]} à $(date)"
-        $0 store >> ../evn_all.log
+        echo "$(date '+%F %T') - INFO - Début téléchargement depuis le site : ${config[evn_site]}" > $evn_log
+        $0 download >> $evn_log
+        echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}" >> $evn_log
+        $0 store >> $evn_log
+        echo "$(date '+%F %T') - INFO - Fin transfert depuis le site : ${config[evn_site]}" >> $evn_log
+        cat $evn_log | mailx -s "Chargement de ${config[evn_site]}" ${config[evn_admin_mail]}
         ;;
 
     *)
