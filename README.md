@@ -1,5 +1,5 @@
 # ExportVN
-Export from VisioNature and load in local postgres database
+Export from VisioNature (French Biolovision sites, but could work elsewhere) and load in local postgres database
 
 EN: Refer to Instal.txt for more details
 
