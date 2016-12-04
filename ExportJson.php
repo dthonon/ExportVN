@@ -38,91 +38,6 @@ require_once 'log4php/Logger.php';
 Logger::configure('config.xml');
 
 /**
- * Download and store taxo_groups
- *
- * name: storeTaxoGroups
- *
- * @param void $logger
- *            Logger for debug message
- * @param array $options
- *            Options for user/password/...
- * @param void $oauth
- *            oauth acces to biolovision site
- * @return $taxo_lits
- *              list of taxo groups available
- * @author Daniel Thonon
- *
- */
-function storeTaxoGroups($logger, $options, $oauth)
-{
-    $requestURI = $options['site'] . 'api/taxo_groups';
-
-    $params = array(
-        'user_pw' => $options['user_pw'],
-        'user_email' => $options['user_email']
-    );
-
-    $taxoList = array();
-    $i = 1;
-    do {
-        // Get data
-        $oauth->enableDebug();
-        $logger->debug(_('Demande de taxo_groups ') . $i);
-        $logger->trace(_(' => params:') . print_r($params, TRUE));
-        $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
-        // $logger->trace($oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
-        $logger->trace('Réception des données');
-        $info = $oauth->getLastResponseInfo();
-        $info['url'] = $requestURI . '?xxx';
-        if (isset($info['content_encoding']) && $info['content_encoding'] == 'gzip') {
-            $logger->debug(_('Reçu contenu compressé par gzip'));
-            $response = gzdecode($oauth->getLastResponse());
-        } else {
-            $logger->debug(_('Reçu contenu non compressé'));
-            $response = $oauth->getLastResponse();
-        }
-        $logger->trace(print_r($oauth->getLastResponseInfo(), true));
-        $respHead = $oauth->getLastResponseHeaders();
-        // $logger->trace($respHead);
-        // Find pagination_key for further request
-        $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
-        if ($pageNum == 1) {
-            $key = rtrim($pageKey[1]);
-            $logger->debug(_('Reçu clé = |') . $key . '|');
-        } else {
-            $key = '';
-            $logger->debug(_('Reçu sans clé'));
-        }
-
-        $data = json_decode($response, true);
-        $logger->debug(_('Reçu ') . count($data['data']) . _(' élements'));
-        if (count($data['data']) == 0) {
-            break;
-        }
-        file_put_contents(getenv('HOME') . '/' . $options['file_store'] . '/taxo_groups_' . $i . '.json', $response);
-
-        foreach ($data['data'] as $key => $value) {
-            // $logger->trace(print_r($data['data'][$key], true));
-            $taxo = $data['data'][$key];
-            $logger->trace(_('Groupe taxonomique : ') . $taxo['id'] . ' = ' . $taxo['name'] . _(', access = ') . $taxo['access_mode']);
-            if ($taxo['access_mode'] != 'none') {
-                $logger->info(_('Taxon à télécharger : ') . $taxo['id'] . ' = ' . $taxo['name'] . _(', access = ') . $taxo['access_mode']);
-                $taxoList[] = $taxo['id'];
-            }
-        }
-
-        $params = array(
-            'user_pw' => $options['user_pw'],
-            'user_email' => $options['user_email'],
-            'pagination_key' => rtrim($pageKey[1])
-        );
-        $i += 1;
-    } while ($i < 10); // Limit to 10 request, to avoid bug infinite loop
-
-    return $taxoList;
-}
-
-/**
  * Gets taxo_groups list from file and returns the list of active taxo_groups
  *
  * name: getTaxoGroups
@@ -131,8 +46,8 @@ function storeTaxoGroups($logger, $options, $oauth)
  *            Logger for debug message
  * @param array $fileStore
  *            Where the file is stored
- * @return $taxo_lits
- *              list of taxo groups available
+ * @return $taxo_list
+ *              list of taxo groups active for this site
  * @author Daniel Thonon
  *
  */
@@ -156,6 +71,39 @@ function getTaxoGroups($logger, $fileStore)
     }
 
     return $taxoList;
+}
+
+/**
+ * Gets local_admin_units list from file and returns the list of active local_admin_units
+ *
+ * name: getLocalAdminUnits
+ *
+ * @param void $logger
+ *            Logger for debug message
+ * @param array $fileStore
+ *            Where the file is stored
+ * @return $localAdminUnitsList
+ *              list of local_admin_units of the site
+ * @author Daniel Thonon
+ *
+ */
+function getLocalAdminUnits($logger, $fileStore)
+{
+    $logger->debug(_('Appel de getLocalAdminUnits'));
+
+    // Read taxo_groups file
+    $response = file_get_contents(getenv('HOME') . '/' . $fileStore . '/local_admin_units_1.json');
+    $data = json_decode($response, true);
+
+    $localAdminUnitsList = array();
+    foreach ($data['data'] as $key => $value) {
+        //$logger->trace(print_r($data['data'][$key], true));
+        $commune = $data['data'][$key];
+        $logger->trace(_('local_admin_units : ') . $commune['id'] . ' = ' . $commune['name']);
+-       $localAdminUnitsList[] = $commune['id'];
+    }
+
+    return $localAdminUnitsList;
 }
 
 /**
@@ -186,9 +134,17 @@ class DownloadTable
     /** Count number of download errors. */
     private $nbError;
 
+    /** What type of subquery to use */
+    private $by_list;
+
+    /** Constants for different lists of subqueries */
+    const NO_LIST = 0; // No subquery, just request all data
+    const TAXO_LIST = 1; // Loop subquery on taxo_groups
+    const ADMIN_UNITS_LIST = 2; // Loop subquery on local_admin_units (communes)
+
     /** Constructor stores parameters. */
     public function __construct($site, $user_email, $user_pw, $table, $fileStore,
-                                $maxDownload = 10, $by_taxo = false)
+                                $maxDownload = 10, $by_list = self::NO_LIST)
     {
         $this->log = Logger::getLogger(__CLASS__);
         $this->site = $site;
@@ -197,7 +153,7 @@ class DownloadTable
         $this->table = $table;
         $this->fileStore = $fileStore;
         $this->maxDowload = $maxDownload;
-        $this->by_taxo = $by_taxo;
+        $this->by_list = $by_list;
         $this->nbError = 0;
     }
 
@@ -205,38 +161,59 @@ class DownloadTable
     {
         $this->log->info(_('Téléchargement et stockage des ') . $this->table);
 
-        if ($this->by_taxo) {
-            // First, request list of taxo groups enabled
-            $taxoList = getTaxoGroups($this->log, $this->fileStore);
-        } else {
-            $taxoList = array(1);
+        /* What type of list is used to subquery ? */
+        switch ($this->by_list) {
+            case self::NO_LIST:
+                $queryList = array(1);
+                break;
+           case self::TAXO_LIST:
+                // First, request list of taxo groups enabled
+                $queryList = getTaxoGroups($this->log, $this->fileStore);
+                break;
+           case self::ADMIN_UNITS_LIST:
+                // First, request list of local_admin_units
+                $queryList = getLocalAdminUnits($this->log, $this->fileStore);
+                break;
+           default:
+                $this->by_list = self::NO_LIST;
+                $queryList = array(1);
+                break;
         }
 
         $requestURI = $this->site . 'api/' . $this->table;
 
         $i = 1;
 
-        // Loop on taxo groups, starting from the end to finish with birds (largest set)
-        foreach (array_reverse($taxoList) as $idTaxo) {
-            if ($this->by_taxo) {
-                $this->log->info(_('Demande des ') . $this->table . _(' du groupe taxonomique = ') . $idTaxo);
-            } else {
-                $this->log->info(_('Demande des ') . $this->table);
+        // Loop on query list, starting from the end to finish with birds (largest set for taxo list)
+        foreach (array_reverse($queryList) as $idQuery) {
+            /* What type of list is used to subquery ? */
+            switch ($this->by_list) {
+                case self::NO_LIST:
+                    $this->log->info(_('Demande des ') . $this->table);
+                    $params = array(
+                        'user_pw' => $this->user_pw,
+                        'user_email' => $this->user_email
+                    );
+                    break;
+               case self::TAXO_LIST:
+                    $this->log->info(_('Demande des ') . $this->table . _(' du taxo_group = ') . $idQuery);
+                    $params = array(
+                        'user_pw' => $this->user_pw,
+                        'user_email' => $this->user_email,
+                        'is_used' => 1,
+                        'id_taxo_group' => $idQuery
+                        );
+                    break;
+               case self::ADMIN_UNITS_LIST:
+                    $this->log->info(_('Demande des ') . $this->table . _(' du local_admin_unit = ') . $idQuery);
+                    $params = array(
+                        'user_pw' => $this->user_pw,
+                        'user_email' => $this->user_email,
+                        'id_commune' => $idQuery
+                    );
+                    break;
             }
 
-            if ($this->by_taxo) {
-                $params = array(
-                    'user_pw' => $this->user_pw,
-                    'user_email' => $this->user_email,
-                    'is_used' => 1,
-                    'id_taxo_group' => $idTaxo
-                );
-            } else {
-                $params = array(
-                    'user_pw' => $this->user_pw,
-                    'user_email' => $this->user_email
-                );
-            }
             do {
                 // Get data
                 if($this->log->isTraceEnabled()) {
@@ -272,6 +249,7 @@ class DownloadTable
                     // }
                     $this->log->debug(_('Enregistrement dans ') . $this->table . '_' . $i . '.json');
                     file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
+                    $i += 1;
                     $chunked = preg_match('/transfer-encoding: chunked/', $respHead, $chunk);
                     if (!$chunked) {
                         $this->log->debug(_('Fin de réception car pas de transfer-encoding: chunked/'));
@@ -288,22 +266,37 @@ class DownloadTable
                         $this->log->debug(_('Reçu sans clé'));
                     }
 
-                    if ($this->by_taxo) {
-                        $params = array(
-                            'user_pw' => $this->user_pw,
-                            'user_email' => $this->user_email,
-                            'id_taxo_group' => $idTaxo,
-                            'is_used' => 1,
-                            'pagination_key' => $key
-                        );
-                    } else {
-                        $params = array(
-                            'user_pw' => $this->user_pw,
-                            'user_email' => $this->user_email,
-                            'pagination_key' => $key
-                        );
+                    /* What type of list is used to subquery ? */
+                    switch ($this->by_list) {
+                        case self::NO_LIST:
+                            $this->log->info(_('Demande des ') . $this->table);
+                            $params = array(
+                                'user_pw' => $this->user_pw,
+                                'user_email' => $this->user_email,
+                                'pagination_key' => $key
+                            );
+                            break;
+                       case self::TAXO_LIST:
+                            $this->log->info(_('Demande des ') . $this->table . _(' du taxo_group = ') . $idQuery);
+                            $params = array(
+                                'user_pw' => $this->user_pw,
+                                'user_email' => $this->user_email,
+                                'is_used' => 1,
+                                'id_taxo_group' => $idQuery,
+                                'pagination_key' => $key
+                                );
+                            break;
+                       case self::ADMIN_UNITS_LIST:
+                            $this->log->info(_('Demande des ') . $this->table . _(' du local_admin_unit = ') . $idQuery);
+                            $params = array(
+                                'user_pw' => $this->user_pw,
+                                'user_email' => $this->user_email,
+                                'id_commune' => $idQuery,
+                                'pagination_key' => $key
+                            );
+                            break;
                     }
-                    $i += 1;
+
                 } catch (OAuthException $oauthException) {
                     $this->nbError += 1;
                     $response = $oauth->getLastResponse();
@@ -353,12 +346,12 @@ function storeObservations($logger, $options, $oauth)
     $i = 1; // Compteur de demandes
 
     // Loop on taxo groups, starting from the end to finish with birds (largest set)
-    foreach (array_reverse($taxoList) as $idTaxo) {
-        $logger->info(_('Demande des observations du groupe taxonomique = ') . $idTaxo);
+    foreach (array_reverse($taxoList) as $idQuery) {
+        $logger->info(_('Demande des observations du groupe taxonomique = ') . $idQuery);
         $params = array(
             'user_pw' => $options['user_pw'],
             'user_email' => $options['user_email'],
-            'id_taxo_group' => $idTaxo
+            'id_taxo_group' => $idQuery
         );
 
         $nbError = 0; // Error counter to stop if to many consecutive errors
@@ -369,7 +362,7 @@ function storeObservations($logger, $options, $oauth)
             } else {
                 $oauth->disableDebug();
             }
-            $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idTaxo);
+            $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idQuery);
             $logger->trace(_(' => params : ') . print_r($params, TRUE));
             try {
                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
@@ -407,7 +400,7 @@ function storeObservations($logger, $options, $oauth)
                     // $params = array(
                     //     'user_pw' => $options['user_pw'],
                     //     'user_email' => $options['user_email'],
-                    //     'id_taxo_group' => $idTaxo,
+                    //     'id_taxo_group' => $idQuery,
                     //     'pagination_key' => rtrim($pageKey[1])
                     // );
                 $logger->trace(_('Données reçues => stockage en json'));
@@ -429,7 +422,7 @@ function storeObservations($logger, $options, $oauth)
                 $params = array(
                     'user_pw' => $options['user_pw'],
                     'user_email' => $options['user_email'],
-                    'id_taxo_group' => $idTaxo,
+                    'id_taxo_group' => $idQuery,
                     'pagination_key' => rtrim($pageKey[1])
                 );
                 $i += 1;
@@ -489,24 +482,9 @@ try {
     die();
 }
 
-// Download and store taxo_groups in database. Must be done first for other object to use latest version
-$taxo_groups = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'taxo_groups',
-                                 $options['file_store'], 10);
-$taxo_groups->download($oauth);
-unset($taxo_groups);
-
-// Download and store observations in database
-$observations = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'observations',
-                                  $options['file_store'], 500, TRUE);
-$observations->download($oauth);
-unset($observations);
-
-// Download and store local_admin_units in database
-$local_admin_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'local_admin_units',
-                                       $options['file_store'], 10);
-$local_admin_units->download($oauth);
-unset($local_admin_units);
-
+// -------------------
+// Organizational data
+// -------------------
 // Download and store entities in database
 $entities = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'entities',
                               $options['file_store'], 10);
@@ -519,11 +497,36 @@ $export_organizations = new DownloadTable($options['site'], $options['user_email
 $export_organizations->download($oauth);
 unset($export_organizations);
 
+
+// --------------
+// Taxonomic data
+// --------------
+// Download and store taxo_groups in database. Must be done first for other object to use latest version
+$taxo_groups = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'taxo_groups',
+                                 $options['file_store'], 10);
+$taxo_groups->download($oauth);
+unset($taxo_groups);
+
 // Download and store families in database
 $families = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'families',
                               $options['file_store'], 10);
 $families->download($oauth);
 unset($families);
+
+// Download and store species in database, subquery by taxo_groups
+$species = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'species',
+                             $options['file_store'], 200, DownloadTable::TAXO_LIST);
+$species->download($oauth);
+unset($species);
+
+// ------------------------
+// Geographical information
+// ------------------------
+// Download and store territorial_units in database
+$territorial_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'territorial_units',
+                                       $options['file_store'], 10);
+$territorial_units->download($oauth);
+unset($territorial_units);
 
 // Download and store grids in database
 $grids = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'grids',
@@ -531,24 +534,23 @@ $grids = new DownloadTable($options['site'], $options['user_email'], $options['u
 $grids->download($oauth);
 unset($grids);
 
-// Download and store places in database
+// Download and store local_admin_units in database
+$local_admin_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'local_admin_units',
+                                       $options['file_store'], 10);
+$local_admin_units->download($oauth);
+unset($local_admin_units);
+
+// Download and store places in database, subquery by local_admin_units
 $places = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'places',
-                            $options['file_store'], 10);
+                            $options['file_store'], 1000, DownloadTable::ADMIN_UNITS_LIST);
 $places->download($oauth);
 unset($places);
 
-// Download and store species in database
-$species = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'species',
-                             $options['file_store'], 100, TRUE);
-$species->download($oauth);
-unset($species);
-
-// Download and store territorial_units in database
-$territorial_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'territorial_units',
-                                       $options['file_store'], 10);
-$territorial_units->download($oauth);
-unset($territorial_units);
-
-// // Download and store export observations
-// $logger->info(_('Téléchargement et stockage des observations'));
-// storeObservations($logger, $options, $oauth);
+// ----------------
+// Observation data
+// ----------------
+// Download and store observations in database, subquery by taxo_groups
+$observations = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'observations',
+                                  $options['file_store'], 500, DownloadTable::TAXO_LIST);
+$observations->download($oauth);
+unset($observations);

@@ -178,7 +178,7 @@ class DbAccess
      */
     public function insertRows($data, $ddlNT, $insertCounter)
     {
-        $this->log->trace('Insertion des lignes dans ' . $this->table);
+        $this->log->debug('Insertion des lignes dans ' . $this->table);
         $this->dbh->beginTransaction();
         // Loop over each data element
         $nbLines = 0;
@@ -1106,7 +1106,7 @@ class StoreFile
 
          // Empty file => exit
          if ($sightings + $forms == 0) {
-             $this->log->warn(_('Fichier de données vide'));
+             $this->log->debug(_('Fichier de données vide'));
          } else {
              $this->log->debug(_('Chargement de ') . $sightings . ' élements sightings');
              $this->log->debug(_('Chargement de ') . $forms . ' élements forms');

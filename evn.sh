@@ -188,7 +188,11 @@ case "$cmd" in
         echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}" >> $evn_log
         $0 store >> $evn_log
         echo "$(date '+%F %T') - INFO - Fin transfert depuis le site : ${config[evn_site]}" >> $evn_log
-        cat $evn_log | mailx -s "Chargement de ${config[evn_site]}" ${config[evn_admin_mail]}
+        echo "Bilan du script : ERROR / WARN :" > ~/mail_fin.txt
+        fgrep -c "ERROR" $evn_log >> ~/mail_fin.txt
+        fgrep -c "WARN" $evn_log >> ~/mail_fin.txt
+        gzip -f $evn_log
+        mailx -s "Chargement de ${config[evn_site]}" -a $evn_log.gz ${config[evn_admin_mail]} < ~/mail_fin.txt
         ;;
 
     *)
