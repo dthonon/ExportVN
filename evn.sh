@@ -164,9 +164,12 @@ case "$cmd" in
         chmod 0600 ~/.pgpass
 
         # Pre-processing sql script
-        env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
-            psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
-            -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Pre_store.sql
+        if [[ -f ~/${config[evn_sql_scripts]}/Pre_store.sql ]]  # Check if script exists
+        then
+            env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
+                psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
+                -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Pre_store.sql
+        fi
 
         # Store downloaded json to postgres db
         php ~/ExportVN/ChargePsql.php \
@@ -184,10 +187,15 @@ case "$cmd" in
         env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
             psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
             -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/ChargePsql.sql
-        # Pre-processing sql script
-        env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
-            psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
-            -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Post_store.sql
+
+        # Post-processing sql script
+        if [[ -f ~/${config[evn_sql_scripts]}/Post_store.sql ]]  # Check if script exists
+        then
+            env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
+                psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
+                -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Post_store.sql
+        fi
+        
         rm -f ~/.pgpass
         echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
