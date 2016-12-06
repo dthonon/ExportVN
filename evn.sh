@@ -125,7 +125,7 @@ case "$cmd" in
         fi
 
         # Prepare SQL init script
-        cp InitDB.sql ~/${config[evn_sql_scripts]}/InitDB.tmp
+        cp SQL_templates/InitDB.sql ~/${config[evn_sql_scripts]}/InitDB.tmp
         sed -i -e "s/evn_db_name/${config[evn_db_name]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
         sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
         sed -i -e "s/evn_db_group/${config[evn_db_group]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
@@ -158,6 +158,17 @@ case "$cmd" in
 
     store)
         echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
+
+        # Prepare password for psql
+        echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
+        chmod 0600 ~/.pgpass
+
+        # Pre-processing sql script
+        env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
+            psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
+            -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Pre_store.sql
+
+        # Store downloaded json to postgres db
         php ~/ExportVN/ChargePsql.php \
         --db_host=${config[evn_db_host]} \
         --db_port=${config[evn_db_port]} \
@@ -169,11 +180,14 @@ case "$cmd" in
         --logging=${config[evn_logging]}
 
         echo "$(date '+%F %T') - INFO - Finalisation de la base de données"
-        echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
-        chmod 0600 ~/.pgpass
+        cp -f SQL_templates/ChargePsql.sql ~/${config[evn_sql_scripts]}/ChargePsql.sql
         env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
             psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
-            -d "dbname=${config[evn_db_name]}" -f ~/ExportVN/ChargePsql.sql
+            -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/ChargePsql.sql
+        # Pre-processing sql script
+        env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
+            psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
+            -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Post_store.sql
         rm -f ~/.pgpass
         echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
