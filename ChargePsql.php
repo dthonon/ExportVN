@@ -394,7 +394,12 @@ class StoreFile
                 $response = file_get_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $fic . '.json');
 
                 // Correct missing comment value (incorrect character)
-                $response = str_replace('"comment": ,' ,'' , $response);
+                $response = str_replace('"comment": ,',
+                                        '"comment": "!!!Commentaire supprimé car caractère incorrect",',
+                                         $response, $pbCar);
+                if ($pbCar > 0) {
+                    $this->log->warn(_('Commentaire incorrect supprimés: ') . $pbCar);
+                }
 
                 // Create insertion counter (for debug)
                 $DbInsertions[$this->table . '_' . $fic . '.json'] = new DbInsertCounter();
@@ -1024,13 +1029,14 @@ class StoreFile
          if ($this->tracing) $this->log->trace(print_r($obs, true));
      }
 
-     public function bSightings($data, $ddlNT, $insertCounter)
+     public function bSightings($data, $ddlNT, $insertCounter, &$obsInit)
      {
          $rowMin = 0; // starting record for debug
          $rowMax = 1000000000; // ending record for debug
          $nbRow = 0;
 
          $obsArray = array(); // Store observations per row
+         $obs = array_merge(array(), $obsInit);
          reset($data);
 
          if ($this->tracing) $this->log->trace(_('Analyse d\'une observation'));
@@ -1041,7 +1047,6 @@ class StoreFile
              }
              if ($this->tracing) $this->log->trace(_('Elément sightings numéro : ') . $nbRow);
              // $this->log->debug(_('Elements : ') . print_r(array_keys($value, TRUE)));
-             $obs = array();
              $this->bSighting($value, $obs);
              $obsArray[] = $obs;
              if ($nbRow > $rowMax) {
@@ -1071,10 +1076,15 @@ class StoreFile
          foreach ($data as $key => $value) {
              $nbRow = $nbRow + 1;
              if ($this->tracing) $this->log->trace(_('Elément forms numéro : ') . $nbRow);
+             $obsInit = array();
              foreach ($value as $keyS => $valueS) {
                  switch ($keyS) {
+                     case 'id_form_universal':
+                         if ($this->tracing) $this->log->trace('  id_form_universal => ' . $valueS);
+                         $obsInit['id_form_universal'] = $valueS;
+                         break;
                      case 'sightings':
-                         $ddlNT = $this->bSightings($valueS, $ddlNT, $insertCounter);
+                         $ddlNT = $this->bSightings($valueS, $ddlNT, $insertCounter, $obsInit);
                          break;
                      default:
                          if ($this->tracing) $this->log->trace(_('Element forms non traité : ') . $keyS);
@@ -1097,6 +1107,7 @@ class StoreFile
          if ($this->tracing) $this->log->trace(_('Début de l\'analyse des ' . $this->table));
          $data = json_decode($response, true);
 
+         // Count sightings and forms in the file
          $sightings = (is_array($data) && (array_key_exists('sightings', $data['data']))) ?
                          count($data['data']['sightings']) :
                          0;
@@ -1115,7 +1126,8 @@ class StoreFile
                  if ($this->tracing) $this->log->trace(_('Analyse de l\'élement : ') . $key);
                  switch ($key) {
                      case 'sightings':
-                         $this->ddlNT = $this->bSightings($value, $this->ddlNT, $insertCounter);
+                         $obsInit = array();
+                         $this->ddlNT = $this->bSightings($value, $this->ddlNT, $insertCounter, $obsInit);
                          break;
                      case 'forms':
                          $this->ddlNT = $this->bForms($value, $this->ddlNT, $insertCounter);
@@ -1236,5 +1248,5 @@ unset($dbh);
 
 // Print summary of DB insertions
 foreach ($DbInsertions as $file => $ins){
-    $logger->debug(_('Insertion de ' . $ins->NbInserted() . " lignes depuis le fichier " . $file));
+    $logger->debug(_('Insertion de ' . $ins->NbInserted() . _(" lignes depuis le fichier ") . $file));
 }

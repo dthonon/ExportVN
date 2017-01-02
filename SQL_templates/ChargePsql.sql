@@ -28,12 +28,18 @@
 --
 -- @license http://www.opensource.org/licenses/mit-license.html MIT License
 
+-- Output format for counting lines in tables
+\pset format unaligned
+\pset expanded on
+\pset fieldsep :
+
 -- Create indexes on entities table
 -- Primary key
 ALTER TABLE entities DROP CONSTRAINT IF EXISTS pk_entities;
 ALTER TABLE entities ADD CONSTRAINT pk_entities PRIMARY KEY(id);
 
 VACUUM ANALYZE entities;
+SELECT COUNT(id) AS "entities" FROM entities;
 
 -- Create indexes on export_organizations table
 -- Primary key
@@ -41,6 +47,7 @@ ALTER TABLE export_organizations DROP CONSTRAINT IF EXISTS pk_export_organizatio
 ALTER TABLE export_organizations ADD CONSTRAINT pk_export_organizations PRIMARY KEY(id);
 
 VACUUM ANALYZE export_organizations;
+SELECT COUNT(id) AS "export_organizations" FROM export_organizations;
 
 -- Create indexes on families table
 -- Primary key
@@ -48,6 +55,7 @@ ALTER TABLE families DROP CONSTRAINT IF EXISTS pk_families;
 ALTER TABLE families ADD CONSTRAINT pk_families PRIMARY KEY(id);
 
 VACUUM ANALYZE families;
+SELECT COUNT(id) AS "families" FROM families;
 
 -- Create indexes on grids table
 -- Primary key
@@ -60,6 +68,7 @@ CREATE INDEX idx_grids_name ON grids
     USING btree (name);
 
 VACUUM ANALYZE grids;
+SELECT COUNT(id) AS "grids" FROM grids;
 
 -- Create indexes on local_admin_units table
 -- Primary key
@@ -72,6 +81,7 @@ CREATE INDEX idx_local_admin_units_name ON local_admin_units
     USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 VACUUM ANALYZE local_admin_units;
+SELECT COUNT(id) AS "local_admin_units" FROM local_admin_units;
 
 -- Create indexes on observations table
 -- Primary key
@@ -160,6 +170,7 @@ CREATE INDEX idx_observations_name ON observations
     USING btree (name);
 
 VACUUM ANALYZE observations;
+SELECT COUNT(id_sighting) AS "observations" FROM observations;
 
 -- Create indexes on places table
 -- Removez duplicate rows (download bug ?)
@@ -190,6 +201,7 @@ UPDATE places SET coord_lon_l93 = ST_X(the_geom);
 UPDATE places SET coord_lat_l93 = ST_Y(the_geom);
 
 VACUUM ANALYZE places;
+SELECT COUNT(id) AS "places" FROM places;
 
 -- Create indexes on species table
 -- Removez duplicate rows (download bug ?)
@@ -201,16 +213,22 @@ VACUUM ANALYZE places;
 -- Primary key
 ALTER TABLE species DROP CONSTRAINT IF EXISTS pk_species;
 ALTER TABLE species ADD CONSTRAINT pk_species PRIMARY KEY(id);
+
 VACUUM ANALYZE species;
+SELECT COUNT(id) AS "species" FROM species;
 
 -- Create indexes on taxo_groups table
 -- Primary key
 ALTER TABLE taxo_groups DROP CONSTRAINT IF EXISTS pk_taxo_groups;
 ALTER TABLE taxo_groups ADD CONSTRAINT pk_taxo_groups PRIMARY KEY(id);
+
 VACUUM ANALYZE taxo_groups;
+SELECT COUNT(id) AS "taxo_groups" FROM taxo_groups;
 
 -- Create indexes on territorial_units table
 -- Primary key
 ALTER TABLE territorial_units DROP CONSTRAINT IF EXISTS pk_territorial_units;
 ALTER TABLE territorial_units ADD CONSTRAINT pk_territorial_units PRIMARY KEY(id);
+
 VACUUM ANALYZE territorial_units;
+SELECT COUNT(id) AS "territorial_units" FROM territorial_units;

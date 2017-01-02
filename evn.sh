@@ -54,7 +54,7 @@ typeset -A config # init array
 # echo "commande = $cmd"
 if [[ -f $evn_conf ]]  # Check if exists and load existing config
 then
-    echo "Chargement de la configuration"
+    echo "$(date '+%F %T') - INFO - Lancement de l'export des données"
     # Parse configuration file
     while read line
     do
@@ -66,7 +66,7 @@ then
         fi
     done < $evn_conf
 else
-    echo "Configuration initiale"
+    echo "$(date '+%F %T') - INFO - Configuration initiale"
     cmd=config
     # Prepare default values
     config[evn_db_host]="localhost"
@@ -163,7 +163,7 @@ case "$cmd" in
         echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
         chmod 0600 ~/.pgpass
 
-        # Pre-processing sql script
+        Pre-processing sql script
         if [[ -f ~/${config[evn_sql_scripts]}/Pre_store.sql ]]  # Check if script exists
         then
             env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
@@ -195,15 +195,15 @@ case "$cmd" in
                 psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
                 -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Post_store.sql
         fi
-        
+
         rm -f ~/.pgpass
         echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
 
     all)
-        if [[ -f $evn_log ]]  # Check if exists and move
+        if [[ -f $evn_log.gz ]]  # Check if exists and move
         then
-            mv $evn_log $evn_log.1
+            mv $evn_log.gz $evn_log.1.gz
         fi
         echo "$(date '+%F %T') - INFO - Début téléchargement depuis le site : ${config[evn_site]}" > $evn_log
         $0 download >> $evn_log
@@ -213,8 +213,11 @@ case "$cmd" in
         echo "Bilan du script : ERROR / WARN :" > ~/mail_fin.txt
         fgrep -c "ERROR" $evn_log >> ~/mail_fin.txt
         fgrep -c "WARN" $evn_log >> ~/mail_fin.txt
+        tail -20 $evn_log  >> ~/mail_fin.txt
         gzip -f $evn_log
+        echo "$(date '+%F %T') - INFO - Fin de l'export des données"
         mailx -s "Chargement de ${config[evn_site]}" -a $evn_log.gz ${config[evn_admin_mail]} < ~/mail_fin.txt
+        rm -f ~/mail_fin.txt
         ;;
 
     *)
