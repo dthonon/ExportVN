@@ -241,12 +241,6 @@ class DownloadTable
                     }
 
                     $this->log->trace(_('LastResponse: ') . substr($response, 1, 50));
-                    // $data = json_decode($response, true);
-                    // $this->log->debug(_('Reçu ') . count($data['data']) . _(' élements'));
-                    // if ((count($data['data']) == 0) || ($pageNum == 0)) {
-                    //     $this->log->debug(_('Fin de réception'));
-                    //     break;
-                    // }
                     $this->log->debug(_('Enregistrement dans ') . $this->table . '_' . $i . '.json');
                     file_put_contents(getenv('HOME') . '/' . $this->fileStore . '/' . $this->table . '_' . $i . '.json', $response);
                     $i += 1;
@@ -534,7 +528,7 @@ $grids = new DownloadTable($options['site'], $options['user_email'], $options['u
 $grids->download($oauth);
 unset($grids);
 
-// Download and store local_admin_units in database
+// Download and store local_admin_units in database. Must be done first for other object to use latest version
 $local_admin_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'local_admin_units',
                                        $options['file_store'], 10);
 $local_admin_units->download($oauth);

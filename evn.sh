@@ -163,7 +163,7 @@ case "$cmd" in
         echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
         chmod 0600 ~/.pgpass
 
-        Pre-processing sql script
+        # Pre-processing sql script
         if [[ -f ~/${config[evn_sql_scripts]}/Pre_store.sql ]]  # Check if script exists
         then
             env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
@@ -213,7 +213,7 @@ case "$cmd" in
         echo "Bilan du script : ERROR / WARN :" > ~/mail_fin.txt
         fgrep -c "ERROR" $evn_log >> ~/mail_fin.txt
         fgrep -c "WARN" $evn_log >> ~/mail_fin.txt
-        tail -20 $evn_log  >> ~/mail_fin.txt
+        tail -15 $evn_log  >> ~/mail_fin.txt
         gzip -f $evn_log
         echo "$(date '+%F %T') - INFO - Fin de l'export des données"
         mailx -s "Chargement de ${config[evn_site]}" -a $evn_log.gz ${config[evn_admin_mail]} < ~/mail_fin.txt
