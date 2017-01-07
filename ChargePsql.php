@@ -152,15 +152,17 @@ class DbAccess
      */
     private function ddlNamesTypes($data)
     {
-        // Analyze last element to define DDL types, as first could be special (i.e. integer instead of character)
-        $this->log->trace(_('Analyse de l\'élement : ') . print_r($data[count($data) - 1], true));
+        // Analyze several elements to define DDL types, as first could be special (i.e. integer instead of character)
         $ddl = array();
-        reset($data);
-        // Find the types
-        foreach ($data[count($data) - 1] as $key => $value) {
-            $ddl[$key] = $this->typeOfValue($key, $value);
+        for ($i = 0; $i < 3; $i++) {
+            // Find the types of this line
+            $l = rand(0, count($data) - 1);
+            $this->log->trace(_('Analyse de l\'élement : ') . print_r($data[$l], true));
+            foreach ($data[$l] as $key => $value) {
+                $ddl[$key] = $this->typeOfValue($key, $value);
+            }
+            $this->log->trace(print_r($ddl, true));
         }
-        $this->log->trace(print_r($ddl, true));
         return $ddl;
     }
 
