@@ -325,14 +325,19 @@ class ParseData
         $this->log->trace(_('Début de l\'analyse des ' . $this->table));
         $data = json_decode($response, true);
 
-        // Drop and create table on first loop
-        if ($this->passNumber == 0) {
-            $this->dba->dropTable();
-            $this->ddlNT = $this->dba->createTable($data['data']);
-            $this->passNumber++;
+        if (count($data['data']) > 0) {
+            // Non empty file : drop and create table on first loop
+            if ($this->passNumber == 0) {
+                $this->dba->dropTable();
+                $this->ddlNT = $this->dba->createTable($data['data']);
+                $this->passNumber++;
+            }
+            // Insert rows
+            $this->ddlNT = $this->dba->insertRows($data['data'], $this->ddlNT, $insertCounter);
+        } else {
+            // File with no data
+            $this->log->info(_('Fichier ignoré : pas de données'));
         }
-        // Insert rows
-        $this->ddlNT = $this->dba->insertRows($data['data'], $this->ddlNT, $insertCounter);
     }
 }
 
