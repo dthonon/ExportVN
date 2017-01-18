@@ -524,6 +524,10 @@ class StoreFile
                      break;
                  case 'comment':
                      if ($this->tracing) $this->log->trace('    ' . $suffix . 'comment => ' . $value);
+                     $search = array("\t", "\n", "\r", "\0", "\x0B");
+                     $value = str_replace($search, ' ', $value);
+                     $search = array('"');
+                     $value = str_replace($search, "'", $value);
                      $obs[$suffix . 'comment'] = $value;
                      break;
                  case 'electric_cause':
@@ -949,11 +953,19 @@ class StoreFile
                      break;
                  case 'comment':
                      if ($this->tracing) $this->log->trace('  comment => ' . $data['comment']);
-                     $obs['comment'] = $data['comment'];
+                     $search = array("\t", "\n", "\r", "\0", "\x0B");
+                     $value = str_replace($search, ' ', $data['comment']);
+                     $search = array('"');
+                     $value = str_replace($search, "'", $value);
+                     $obs['comment'] = $value;
                      break;
                  case 'hidden_comment':
                      if ($this->tracing) $this->log->trace('  hidden_comment => ' . $data['hidden_comment']);
-                     $obs['hidden_comment'] = $data['hidden_comment'];
+                     $search = array("\t", "\n", "\r", "\0", "\x0B");
+                     $value = str_replace($search, ' ', $data['hidden_comment']);
+                     $search = array('"');
+                     $value = str_replace($search, "'", $value);
+                     $obs['hidden_comment'] = $value;
                      break;
                  case 'entity':
                      if ($this->tracing) $this->log->trace('  entity => ' . $data['entity']);
