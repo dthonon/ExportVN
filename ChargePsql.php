@@ -1055,9 +1055,8 @@ class StoreFile
          $nbRow = 0;
 
          $obsArray = array(); // Store observations per row
-         $obs = array_merge(array(), $obsInit);
-         reset($data);
 
+         reset($data);
          if ($this->tracing) $this->log->trace(_('Analyse d\'une observation'));
          foreach ($data as $key => $value) {
              $nbRow = $nbRow + 1;
@@ -1066,6 +1065,7 @@ class StoreFile
              }
              if ($this->tracing) $this->log->trace(_('Elément sightings numéro : ') . $nbRow);
              // $this->log->debug(_('Elements : ') . print_r(array_keys($value, TRUE)));
+             $obs = array_merge(array(), $obsInit);
              $this->bSighting($value, $obs);
              $obsArray[] = $obs;
              if ($nbRow > $rowMax) {
