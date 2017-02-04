@@ -167,7 +167,7 @@ CREATE INDEX idx_observations_has_death ON observations
 -- Index: idx_name
 DROP INDEX IF EXISTS idx_observations_name;
 CREATE INDEX idx_observations_name ON observations
-    USING btree (name);
+    USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 VACUUM ANALYZE observations;
 SELECT COUNT(id_sighting) AS "observations" FROM observations;
@@ -200,6 +200,11 @@ ALTER TABLE places ADD coord_lat_l93 double precision;
 UPDATE places SET coord_lon_l93 = ST_X(the_geom);
 UPDATE places SET coord_lat_l93 = ST_Y(the_geom);
 
+-- Index: idx_name
+DROP INDEX IF EXISTS idx_places_name;
+CREATE INDEX idx_places_name ON places
+    USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
+
 VACUUM ANALYZE places;
 SELECT COUNT(id) AS "places" FROM places;
 
@@ -213,6 +218,16 @@ SELECT COUNT(id) AS "places" FROM places;
 -- Primary key
 ALTER TABLE species DROP CONSTRAINT IF EXISTS pk_species;
 ALTER TABLE species ADD CONSTRAINT pk_species PRIMARY KEY(id);
+
+-- Index: idx_french_name
+DROP INDEX IF EXISTS idx_species_french_name;
+CREATE INDEX idx_species_french_name ON species
+    USING btree (french_name COLLATE pg_catalog."default" varchar_pattern_ops);
+
+-- Index: idx_latin_name
+DROP INDEX IF EXISTS idx_species_latin_name;
+CREATE INDEX idx_species_latin_name ON species
+    USING btree (latin_name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 VACUUM ANALYZE species;
 SELECT COUNT(id) AS "species" FROM species;

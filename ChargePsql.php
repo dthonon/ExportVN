@@ -973,7 +973,8 @@ class StoreFile
                      break;
                  case 'entity_fullname':
                      if ($this->tracing) $this->log->trace('  entity_fullname => ' . $data['entity_fullname']);
-                     $obs['entity_fullname'] = $data['entity_fullname'];
+                     // Not stored as entity is enough
+                     //  $obs['entity_fullname'] = $data['entity_fullname'];
                      break;
                  case 'project':
                      if ($this->tracing) $this->log->trace('  project => ' . $data['project']);
@@ -1101,6 +1102,14 @@ class StoreFile
                      case 'id_form_universal':
                          if ($this->tracing) $this->log->trace('  id_form_universal => ' . $valueS);
                          $obsInit['id_form_universal'] = $valueS;
+                         break;
+                     case 'time_start':
+                         if ($this->tracing) $this->log->trace('  time_start => ' . $valueS);
+                         $obsInit['time_start'] = $valueS;
+                         break;
+                     case 'time_stop':
+                         if ($this->tracing) $this->log->trace('  time_stop => ' . $valueS);
+                         $obsInit['time_stop'] = $valueS;
                          break;
                      case 'sightings':
                          $ddlNT = $this->bSightings($valueS, $ddlNT, $insertCounter, $obsInit);
