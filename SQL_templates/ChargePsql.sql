@@ -38,6 +38,9 @@
 ALTER TABLE entities DROP CONSTRAINT IF EXISTS pk_entities;
 ALTER TABLE entities ADD CONSTRAINT pk_entities PRIMARY KEY(id);
 
+GRANT ALL ON TABLE entities TO postgres;
+GRANT ALL ON TABLE entities TO lpo_isere;
+
 VACUUM ANALYZE entities;
 SELECT COUNT(id) AS "entities" FROM entities;
 
@@ -46,6 +49,9 @@ SELECT COUNT(id) AS "entities" FROM entities;
 ALTER TABLE export_organizations DROP CONSTRAINT IF EXISTS pk_export_organizations;
 ALTER TABLE export_organizations ADD CONSTRAINT pk_export_organizations PRIMARY KEY(id);
 
+GRANT ALL ON TABLE export_organizations TO postgres;
+GRANT ALL ON TABLE export_organizations TO lpo_isere;
+
 VACUUM ANALYZE export_organizations;
 SELECT COUNT(id) AS "export_organizations" FROM export_organizations;
 
@@ -53,6 +59,9 @@ SELECT COUNT(id) AS "export_organizations" FROM export_organizations;
 -- Primary key
 ALTER TABLE families DROP CONSTRAINT IF EXISTS pk_families;
 ALTER TABLE families ADD CONSTRAINT pk_families PRIMARY KEY(id);
+
+GRANT ALL ON TABLE families TO postgres;
+GRANT ALL ON TABLE families TO lpo_isere;
 
 VACUUM ANALYZE families;
 SELECT COUNT(id) AS "families" FROM families;
@@ -67,6 +76,9 @@ DROP INDEX IF EXISTS idx_grids_name;
 CREATE INDEX idx_grids_name ON grids
     USING btree (name);
 
+GRANT ALL ON TABLE grids TO postgres;
+GRANT ALL ON TABLE grids TO lpo_isere;
+
 VACUUM ANALYZE grids;
 SELECT COUNT(id) AS "grids" FROM grids;
 
@@ -79,6 +91,9 @@ ALTER TABLE local_admin_units ADD CONSTRAINT pk_local_admin_units PRIMARY KEY(id
 DROP INDEX IF EXISTS idx_local_admin_units_name;
 CREATE INDEX idx_local_admin_units_name ON local_admin_units
     USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
+
+GRANT ALL ON TABLE local_admin_units TO postgres;
+GRANT ALL ON TABLE local_admin_units TO lpo_isere;
 
 VACUUM ANALYZE local_admin_units;
 SELECT COUNT(id) AS "local_admin_units" FROM local_admin_units;
@@ -129,25 +144,15 @@ DROP INDEX IF EXISTS idx_observations_date_year;
 CREATE INDEX idx_observations_date_year ON observations
     USING btree (date_year);
 
--- Index: idx_observations_latin_species
-DROP INDEX IF EXISTS idx_observations_latin_species;
-CREATE INDEX idx_observations_latin_species ON observations
-    USING btree (latin_species COLLATE pg_catalog."default" varchar_pattern_ops);
+-- Index: idx_observations_id_species
+DROP INDEX IF EXISTS idx_observations_id_species;
+CREATE INDEX idx_observations_id_species ON observations
+    USING btree (id_species);
 
--- Index: idx_observations_municipality
-DROP INDEX IF EXISTS idx_observations_municipality;
-CREATE INDEX idx_observations_municipality ON observations
-    USING btree (municipality COLLATE pg_catalog."default" varchar_pattern_ops);
-
--- Index: idx_observations_insee
-DROP INDEX IF EXISTS idx_observations_insee;
-CREATE INDEX idx_observations_insee ON observations
-    USING btree (insee);
-
--- Index: idx_observations_name_species
-DROP INDEX IF EXISTS idx_observations_name_species;
-CREATE INDEX idx_observations_name_species ON observations
-    USING btree (name_species COLLATE pg_catalog."default" varchar_pattern_ops);
+-- Index: idx_observations_id_place
+DROP INDEX IF EXISTS idx_observations_id_place;
+CREATE INDEX idx_observations_id_place ON observations
+    USING btree (id_place);
 
 -- Index: idx_observations_comment
 DROP INDEX IF EXISTS idx_observations_comment;
@@ -165,9 +170,12 @@ CREATE INDEX idx_observations_has_death ON observations
     USING btree (has_death);
 
 -- Index: idx_name
-DROP INDEX IF EXISTS idx_observations_name;
+DROP INDEX IF EXISTS idx_observations_observer_name;
 CREATE INDEX idx_observations_name ON observations
-    USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
+    USING btree (observer_name COLLATE pg_catalog."default" varchar_pattern_ops);
+
+GRANT ALL ON TABLE observations TO postgres;
+GRANT ALL ON TABLE observations TO lpo_isere;
 
 VACUUM ANALYZE observations;
 SELECT COUNT(id_sighting) AS "observations" FROM observations;
@@ -205,6 +213,9 @@ DROP INDEX IF EXISTS idx_places_name;
 CREATE INDEX idx_places_name ON places
     USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
 
+GRANT ALL ON TABLE places TO postgres;
+GRANT ALL ON TABLE places TO lpo_isere;
+
 VACUUM ANALYZE places;
 SELECT COUNT(id) AS "places" FROM places;
 
@@ -229,6 +240,9 @@ DROP INDEX IF EXISTS idx_species_latin_name;
 CREATE INDEX idx_species_latin_name ON species
     USING btree (latin_name COLLATE pg_catalog."default" varchar_pattern_ops);
 
+GRANT ALL ON TABLE species TO postgres;
+GRANT ALL ON TABLE species TO lpo_isere;
+
 VACUUM ANALYZE species;
 SELECT COUNT(id) AS "species" FROM species;
 
@@ -236,6 +250,9 @@ SELECT COUNT(id) AS "species" FROM species;
 -- Primary key
 ALTER TABLE taxo_groups DROP CONSTRAINT IF EXISTS pk_taxo_groups;
 ALTER TABLE taxo_groups ADD CONSTRAINT pk_taxo_groups PRIMARY KEY(id);
+
+GRANT ALL ON TABLE taxo_groups TO postgres;
+GRANT ALL ON TABLE taxo_groups TO lpo_isere;
 
 VACUUM ANALYZE taxo_groups;
 SELECT COUNT(id) AS "taxo_groups" FROM taxo_groups;
@@ -245,5 +262,45 @@ SELECT COUNT(id) AS "taxo_groups" FROM taxo_groups;
 ALTER TABLE territorial_units DROP CONSTRAINT IF EXISTS pk_territorial_units;
 ALTER TABLE territorial_units ADD CONSTRAINT pk_territorial_units PRIMARY KEY(id);
 
+GRANT ALL ON TABLE territorial_units TO postgres;
+GRANT ALL ON TABLE territorial_units TO lpo_isere;
+
 VACUUM ANALYZE territorial_units;
 SELECT COUNT(id) AS "territorial_units" FROM territorial_units;
+
+-- Create general views
+-- View: v_places to rename id and gather data from places up to territorial_units
+CREATE OR REPLACE VIEW v_places AS
+ SELECT
+    places.id AS places_id,
+    places.name AS places_name,
+    local_admin_units.name AS municipality,
+    local_admin_units.insee,
+    territorial_units.name AS county
+   FROM places,
+    local_admin_units,
+    territorial_units
+  WHERE places.id_commune = local_admin_units.id AND local_admin_units.id_canton = territorial_units.id;
+
+GRANT ALL ON TABLE v_places TO postgres;
+GRANT ALL ON TABLE v_places TO lpo_isere;
+
+-- View: v_species, to rename id and select main colums
+CREATE OR REPLACE VIEW v_species AS
+ SELECT
+    species.id AS species_id,
+    species.french_name,
+    species.latin_name
+   FROM species;
+
+GRANT ALL ON TABLE v_species TO postgres;
+GRANT ALL ON TABLE v_species TO lpo_isere;
+
+-- View: v_observations, to replace previous denormalized observations table
+CREATE OR REPLACE VIEW v_observations AS
+ SELECT *
+   FROM observations, v_species, v_places
+   WHERE (observations.id_species = v_species.species_id) AND (observations.id_place = v_places.places_id);
+
+GRANT ALL ON TABLE v_species TO postgres;
+GRANT ALL ON TABLE v_species TO lpo_isere;

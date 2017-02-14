@@ -477,36 +477,36 @@ class StoreFile
      {
          if ($this->tracing) $this->log->trace('  species_id => ' . $data['@id']);
          $obs['id_species'] = $data['@id'];
-         if ($this->tracing) $this->log->trace('  species_name => ' . $data['name']);
-         $obs['name_species'] = $data['name'];
-         if ($this->tracing) $this->log->trace('  species_latin_name => ' . $data['latin_name']);
-         $obs['latin_species'] = $data['latin_name'];
+        //  if ($this->tracing) $this->log->trace('  species_name => ' . $data['name']);
+        //  $obs['name_species'] = $data['name'];
+        //  if ($this->tracing) $this->log->trace('  species_latin_name => ' . $data['latin_name']);
+        //  $obs['latin_species'] = $data['latin_name'];
      }
 
      private function bPlace($data, &$obs)
      {
          if ($this->tracing) $this->log->trace('  id_place => ' . $data['@id']);
          $obs['id_place'] = $data['@id'];
-         if ($this->tracing) $this->log->trace('  place => ' . $data['name']);
-         $obs['place'] = $data['name'];
-         if ($this->tracing) $this->log->trace('  municipality => ' . $data['municipality']);
-         $obs['municipality'] = $data['municipality'];
-         if ($this->tracing) $this->log->trace('  insee => ' . $data['insee']);
-         $obs['insee'] = $data['insee'];
-         if ($this->tracing) $this->log->trace('  county => ' . $data['county']);
-         $obs['county'] = $data['county'];
-         if ($this->tracing) $this->log->trace('  country => ' . $data['country']);
-         $obs['country'] = $data['country'];
-         if ($this->tracing) $this->log->trace('  altitude => ' . $data['altitude']);
-         $obs['altitude'] = $data['altitude'];
-         if ($this->tracing) $this->log->trace('  coord_lat => ' . $data['coord_lat']);
-         $obs['place_coord_lat'] = $data['coord_lat'];
-         if ($this->tracing) $this->log->trace('  coord_lon => ' . $data['coord_lon']);
-         $obs['place_coord_lon'] = $data['coord_lon'];
-         if ($this->tracing) $this->log->trace('  loc_precision => ' . $data['loc_precision']);
-         $obs['loc_precision'] = $data['loc_precision'];
-         if ($this->tracing) $this->log->trace('  place_type => ' . $data['place_type']);
-         $obs['place_type'] = $data['place_type'];
+        //  if ($this->tracing) $this->log->trace('  place => ' . $data['name']);
+        //  $obs['place'] = $data['name'];
+        //  if ($this->tracing) $this->log->trace('  municipality => ' . $data['municipality']);
+        //  $obs['municipality'] = $data['municipality'];
+        //  if ($this->tracing) $this->log->trace('  insee => ' . $data['insee']);
+        //  $obs['insee'] = $data['insee'];
+        //  if ($this->tracing) $this->log->trace('  county => ' . $data['county']);
+        //  $obs['county'] = $data['county'];
+        //  if ($this->tracing) $this->log->trace('  country => ' . $data['country']);
+        //  $obs['country'] = $data['country'];
+        //  if ($this->tracing) $this->log->trace('  altitude => ' . $data['altitude']);
+        //  $obs['altitude'] = $data['altitude'];
+        //  if ($this->tracing) $this->log->trace('  coord_lat => ' . $data['coord_lat']);
+        //  $obs['place_coord_lat'] = $data['coord_lat'];
+        //  if ($this->tracing) $this->log->trace('  coord_lon => ' . $data['coord_lon']);
+        //  $obs['place_coord_lon'] = $data['coord_lon'];
+        //  if ($this->tracing) $this->log->trace('  loc_precision => ' . $data['loc_precision']);
+        //  $obs['loc_precision'] = $data['loc_precision'];
+        //  if ($this->tracing) $this->log->trace('  place_type => ' . $data['place_type']);
+        //  $obs['place_type'] = $data['place_type'];
      }
 
      private function bExtendedInfoMortality($data, &$obs, $suffix)
@@ -878,7 +878,7 @@ class StoreFile
                      break;
                  case 'name':
                      if ($this->tracing) $this->log->trace('  name => ' . $data['name']);
-                     $obs['name'] = $data['name'];
+                     $obs['observer_name'] = $data['name'];
                      break;
                  case 'id_sighting':
                      if ($this->tracing) $this->log->trace('  id_sighting => ' . $data['id_sighting']);

@@ -233,10 +233,14 @@ class DownloadTable
                     // $this->log->trace('LastResponseHeaders: ' . $respHead);
                     // $this->log->trace('LastResponse: ' . $oauth->getLastResponse());
                     if (isset($info['content_encoding']) && $info['content_encoding'] == 'gzip') {
-                        $this->log->trace('Réponse compressée par gzip');
+                        if ($i == 1) {
+                            $this->log->info('Réponse compressée par gzip');
+                        }
                         $response = gzdecode($oauth->getLastResponse());
                     } else {
-                        $this->log->trace('Réponse non compressée');
+                        if ($i == 1) {
+                            $this->log->info('Réponse noncompressée par gzip');
+                        }
                         $response = $oauth->getLastResponse();
                     }
 
@@ -313,131 +317,6 @@ class DownloadTable
 
 }
 
-
-// /**
-//  * Download and store observations
-//  *
-//  * name: storeObservations
-//  *
-//  * @param void $logger
-//  *            Logger for debug message
-//  * @param array $options
-//  *            Options for user/password/...
-//  * @param void $oauth
-//  *            oauth acces to biolovision site
-//  * @return void
-//  * @author Daniel Thonon
-//  *
-//  */
-// function storeObservations($logger, $options, $oauth)
-// {
-//     $requestURI = $options['site'] . 'api/observations';
-//
-//     // First, request list of taxo groups enabled
-//     // Note : as side effect, the taxo_group file is created here
-//     $taxoList = storeTaxoGroups($logger, $options, $oauth);
-//
-//     $i = 1; // Compteur de demandes
-//
-//     // Loop on taxo groups, starting from the end to finish with birds (largest set)
-//     foreach (array_reverse($taxoList) as $idQuery) {
-//         $logger->info(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idQuery);
-//         $params = array(
-//             'user_pw' => $options['user_pw'],
-//             'user_email' => $options['user_email'],
-//             'id_taxo_group' => $idQuery
-//         );
-//
-//         $nbError = 0; // Error counter to stop if to many consecutive errors
-//         do {
-//             // Get data
-//             if($logger->isTraceEnabled()) {
-//                 $oauth->enableDebug();
-//             } else {
-//                 $oauth->disableDebug();
-//             }
-//             $logger->debug(_('Demande d\'observations ') . $i . _(', groupe taxonomique ') . $idQuery);
-//             $logger->trace(_(' => params : ') . print_r($params, TRUE));
-//             try {
-//                 $oauth->fetch($requestURI, $params, OAUTH_HTTP_METHOD_GET, array('Accept-Encoding' => 'gzip'));
-//                 $logger->trace(_('RequestHeader: ') . $oauth->getRequestHeader(OAUTH_HTTP_METHOD_GET, $requestURI));
-//                 $logger->trace(_('Réception des données'));
-//                 $info = $oauth->getLastResponseInfo();
-//                 $info['url'] = $requestURI . '?xxx';
-//                 if (isset($info['content_encoding']) && $info['content_encoding'] == 'gzip') {
-//                     $logger->debug(_('Reçu contenu compressé par gzip'));
-//                     $response = gzdecode($oauth->getLastResponse());
-//                 } else {
-//                     $logger->debug(_('Reçu contenu non compressé'));
-//                     $response = $oauth->getLastResponse();
-//                 }
-//                 $logger->trace(_('LastResponseInfo: ') . print_r($oauth->getLastResponseInfo(), true));
-//                 $respHead = $oauth->getLastResponseHeaders();
-//                 // $logger->trace(_('LastResponseHeaders ') . $respHead);
-//
-//                 // Decode json to array
-//                 $logger->trace(_('JSON reçu: ') . substr($response, 1, 50));
-//
-//                 // $data = json_decode($response, true);
-//                 // // Count individual sightings or forms
-//                 // $sightings = (isset($data['data']['sightings'])) ? count($data['data']['sightings']) : 0;
-//                 // $forms = (isset($data['data']['forms'])) ? count($data['data']['forms']) : 0;
-//                 // $logger->debug(_('Lu ') . $sightings . _(' élements sightings'));
-//                 // $logger->debug(_('Lu ') . $forms . _(' élements forms'));
-//                 //
-//                 // // Check if data received
-//                 // if ($sightings + $forms == 0) { // Empty file => exit
-//                 //     $logger->trace(_('Aucune données reçues '));
-//                 //     break;
-//                 // }
-//                     // sleep(10);
-//                     // $params = array(
-//                     //     'user_pw' => $options['user_pw'],
-//                     //     'user_email' => $options['user_email'],
-//                     //     'id_taxo_group' => $idQuery,
-//                     //     'pagination_key' => rtrim($pageKey[1])
-//                     // );
-//                 $logger->trace(_('Données reçues => stockage en json'));
-//                 file_put_contents(
-//                     getenv('HOME') . '/' . $options['file_store'] . '/observations_' . $i . '.json',
-//                     $response
-//                 );
-//
-//                 // Find pagination_key for further request
-//                 $pageNum = preg_match('/pagination_key: (.*)/', $respHead, $pageKey);
-//                 if ($pageNum == 1) {
-//                     $key = rtrim($pageKey[1]);
-//                     $logger->debug(_('Reçu clé = |') . $key . '|');
-//                 } else {
-//                     $key = '';
-//                     $logger->debug(_('Reçu sans clé'));
-//                 }
-//
-//                 $params = array(
-//                     'user_pw' => $options['user_pw'],
-//                     'user_email' => $options['user_email'],
-//                     'id_taxo_group' => $idQuery,
-//                     'pagination_key' => rtrim($pageKey[1])
-//                 );
-//                 $i += 1;
-//                 $nbError = 0; // No error: reset counter
-//
-//             } catch (OAuthException $oauthException) {
-//                 $nbError += 1;
-//                 $response = $oauth->getLastResponse();
-//                 $jsonError = json_decode($oauthException->lastResponse, true);
-//                 $logger->error(_('Erreur de réception numéro : ') . $nbError . _(', code : ') . var_export($jsonError, true));
-//                 $logger->error(print_r($oauth->getLastResponseInfo(), true));
-//                 $logger->error(_('Message d\'erreur : ') . $oauthException->getMessage());
-//                 if ($nbError > 5) {
-//                     $logger->fatal(_('Arrêt après 5 erreurs'));
-//                     break;
-//                 }
-//                 sleep(10); // Wait before next request
-//             };
-//         } while ($i < 500); // Limit to 500 request, to avoid bug infinite loop
-//     }
-// }
 
 // ///////////////////////// Main ////////////////////////////////////
 // Larger memory to handle observations
