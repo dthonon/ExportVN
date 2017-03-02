@@ -125,16 +125,16 @@ case "$cmd" in
         fi
 
         # Prepare SQL init script
-        cp SQL_templates/InitDB.sql ~/${config[evn_sql_scripts]}/InitDB.tmp
-        sed -i -e "s/evn_db_name/${config[evn_db_name]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
-        sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
-        sed -i -e "s/evn_db_group/${config[evn_db_group]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
-        sed -i -e "s/evn_db_user/${config[evn_db_user]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
-        sed -i -e "s/evn_db_pw/${config[evn_db_pw]}/" ~/${config[evn_sql_scripts]}/InitDB.tmp
-        mv ~/${config[evn_sql_scripts]}/InitDB.tmp ~/${config[evn_sql_scripts]}/Init_${config[evn_db_name]}.sql
+        cp SQL_templates/InitDB.sql /tmp/InitDB.tmp
+        sed -i -e "s/evn_db_name/${config[evn_db_name]}/" /tmp/InitDB.tmp
+        sed -i -e "s/evn_db_schema/${config[evn_db_schema]}/" /tmp/InitDB.tmp
+        sed -i -e "s/evn_db_group/${config[evn_db_group]}/" /tmp/InitDB.tmp
+        sed -i -e "s/evn_db_user/${config[evn_db_user]}/" /tmp/InitDB.tmp
+        sed -i -e "s/evn_db_pw/${config[evn_db_pw]}/" /tmp/InitDB.tmp
+        mv /tmp/InitDB.tmp /tmp/Init_${config[evn_db_name]}.sql
 
         echo "Pour (re)créer la base de données, exécutez la commande suivante depuis le compte postgres"
-        echo "$ psql -f $(pwd)/${config[evn_sql_scripts]}/Init_${config[evn_db_name]}.sql"
+        echo "$ psql -f /tmp/Init_${config[evn_db_name]}.sql"
         ;;
 
     download)
@@ -184,6 +184,7 @@ case "$cmd" in
 
         echo "$(date '+%F %T') - INFO - Finalisation de la base de données"
         cp -f SQL_templates/ChargePsql.sql ~/${config[evn_sql_scripts]}/ChargePsql.sql
+        sed -i -e "s/evn_db_group/${config[evn_db_group]}/" ~/${config[evn_sql_scripts]}/ChargePsql.sql
         env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
             psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
             -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/ChargePsql.sql

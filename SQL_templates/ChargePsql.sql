@@ -39,7 +39,7 @@ ALTER TABLE entities DROP CONSTRAINT IF EXISTS pk_entities;
 ALTER TABLE entities ADD CONSTRAINT pk_entities PRIMARY KEY(id);
 
 GRANT ALL ON TABLE entities TO postgres;
-GRANT ALL ON TABLE entities TO lpo_isere;
+GRANT ALL ON TABLE entities TO evn_db_group;
 
 VACUUM ANALYZE entities;
 SELECT COUNT(id) AS "entities" FROM entities;
@@ -50,7 +50,7 @@ ALTER TABLE export_organizations DROP CONSTRAINT IF EXISTS pk_export_organizatio
 ALTER TABLE export_organizations ADD CONSTRAINT pk_export_organizations PRIMARY KEY(id);
 
 GRANT ALL ON TABLE export_organizations TO postgres;
-GRANT ALL ON TABLE export_organizations TO lpo_isere;
+GRANT ALL ON TABLE export_organizations TO evn_db_group;
 
 VACUUM ANALYZE export_organizations;
 SELECT COUNT(id) AS "export_organizations" FROM export_organizations;
@@ -61,7 +61,7 @@ ALTER TABLE families DROP CONSTRAINT IF EXISTS pk_families;
 ALTER TABLE families ADD CONSTRAINT pk_families PRIMARY KEY(id);
 
 GRANT ALL ON TABLE families TO postgres;
-GRANT ALL ON TABLE families TO lpo_isere;
+GRANT ALL ON TABLE families TO evn_db_group;
 
 VACUUM ANALYZE families;
 SELECT COUNT(id) AS "families" FROM families;
@@ -77,7 +77,7 @@ CREATE INDEX idx_grids_name ON grids
     USING btree (name);
 
 GRANT ALL ON TABLE grids TO postgres;
-GRANT ALL ON TABLE grids TO lpo_isere;
+GRANT ALL ON TABLE grids TO evn_db_group;
 
 VACUUM ANALYZE grids;
 SELECT COUNT(id) AS "grids" FROM grids;
@@ -93,7 +93,7 @@ CREATE INDEX idx_local_admin_units_name ON local_admin_units
     USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 GRANT ALL ON TABLE local_admin_units TO postgres;
-GRANT ALL ON TABLE local_admin_units TO lpo_isere;
+GRANT ALL ON TABLE local_admin_units TO evn_db_group;
 
 VACUUM ANALYZE local_admin_units;
 SELECT COUNT(id) AS "local_admin_units" FROM local_admin_units;
@@ -175,7 +175,7 @@ CREATE INDEX idx_observations_name ON observations
     USING btree (observer_name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 GRANT ALL ON TABLE observations TO postgres;
-GRANT ALL ON TABLE observations TO lpo_isere;
+GRANT ALL ON TABLE observations TO evn_db_group;
 
 VACUUM ANALYZE observations;
 SELECT COUNT(id_sighting) AS "observations" FROM observations;
@@ -214,7 +214,7 @@ CREATE INDEX idx_places_name ON places
     USING btree (name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 GRANT ALL ON TABLE places TO postgres;
-GRANT ALL ON TABLE places TO lpo_isere;
+GRANT ALL ON TABLE places TO evn_db_group;
 
 VACUUM ANALYZE places;
 SELECT COUNT(id) AS "places" FROM places;
@@ -241,7 +241,7 @@ CREATE INDEX idx_species_latin_name ON species
     USING btree (latin_name COLLATE pg_catalog."default" varchar_pattern_ops);
 
 GRANT ALL ON TABLE species TO postgres;
-GRANT ALL ON TABLE species TO lpo_isere;
+GRANT ALL ON TABLE species TO evn_db_group;
 
 VACUUM ANALYZE species;
 SELECT COUNT(id) AS "species" FROM species;
@@ -252,7 +252,7 @@ ALTER TABLE taxo_groups DROP CONSTRAINT IF EXISTS pk_taxo_groups;
 ALTER TABLE taxo_groups ADD CONSTRAINT pk_taxo_groups PRIMARY KEY(id);
 
 GRANT ALL ON TABLE taxo_groups TO postgres;
-GRANT ALL ON TABLE taxo_groups TO lpo_isere;
+GRANT ALL ON TABLE taxo_groups TO evn_db_group;
 
 VACUUM ANALYZE taxo_groups;
 SELECT COUNT(id) AS "taxo_groups" FROM taxo_groups;
@@ -263,7 +263,7 @@ ALTER TABLE territorial_units DROP CONSTRAINT IF EXISTS pk_territorial_units;
 ALTER TABLE territorial_units ADD CONSTRAINT pk_territorial_units PRIMARY KEY(id);
 
 GRANT ALL ON TABLE territorial_units TO postgres;
-GRANT ALL ON TABLE territorial_units TO lpo_isere;
+GRANT ALL ON TABLE territorial_units TO evn_db_group;
 
 VACUUM ANALYZE territorial_units;
 SELECT COUNT(id) AS "territorial_units" FROM territorial_units;
@@ -283,7 +283,7 @@ CREATE OR REPLACE VIEW v_places AS
   WHERE places.id_commune = local_admin_units.id AND local_admin_units.id_canton = territorial_units.id;
 
 GRANT ALL ON TABLE v_places TO postgres;
-GRANT ALL ON TABLE v_places TO lpo_isere;
+GRANT ALL ON TABLE v_places TO evn_db_group;
 
 -- View: v_species, to rename id and select main colums
 CREATE OR REPLACE VIEW v_species AS
@@ -294,7 +294,7 @@ CREATE OR REPLACE VIEW v_species AS
    FROM species;
 
 GRANT ALL ON TABLE v_species TO postgres;
-GRANT ALL ON TABLE v_species TO lpo_isere;
+GRANT ALL ON TABLE v_species TO evn_db_group;
 
 -- View: v_observations, to replace previous denormalized observations table
 CREATE OR REPLACE VIEW v_observations AS
@@ -303,4 +303,4 @@ CREATE OR REPLACE VIEW v_observations AS
    WHERE (observations.id_species = v_species.species_id) AND (observations.id_place = v_places.places_id);
 
 GRANT ALL ON TABLE v_species TO postgres;
-GRANT ALL ON TABLE v_species TO lpo_isere;
+GRANT ALL ON TABLE v_species TO evn_db_group;
