@@ -9,17 +9,15 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian => 
         $ sudo yum install mailx
 
     Oracle Linux 7 :
+        $ sudo yum install wget nano git mailx
         $ wget https://fr2.rpmfind.net/linux/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
         $ sudo rpm -ivh epel-release-7-9.noarch.rpm
         $ sudo yum update
-        $ sudo yum install git
-        $ sudo yum install mailx
 
     Ubuntu 16.04 :
         $ sudo apt install git
         
 2) Installer postgres (9.6 actuellement)
-
     Oracle Linux 7 :
         $ wget https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-oraclelinux96-9.6-3.noarch.rpm
         $ sudo rpm -ivh pgdg-oraclelinux96-9.6-3.noarch.rpm
@@ -27,6 +25,17 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian => 
         $ sudo /usr/pgsql-9.6/bin/postgresql96-setup initdb
         $ sudo systemctl enable postgresql-9.6.service
         $ sudo systemctl start postgresql-9.6.service
+        $ sudo yum install postgis2_96
+        $ sudo nano /var/lib/pgsql/9.6/data/postgresql.conf
+          => change #listen_addresses='localhost' to listen_addresses='*' if you want postgresql to run on all ips.
+        $  sudo nano /var/lib/pgsql/9.6/data/pg_hba.conf
+          => add a line below if you want to be able to access postgresql from external.
+          host all all  0.0.0.0/0   md5
+        $ sudo systemctl restart  postgresql-9.6.service
+        $ sudo -iu postrgres
+        $ psql
+        CREATE EXTENSION adminpack;
+        CREATE ROLE adm_export LOGIN PASSWORD 'whateveryouwant' SUPERUSER;
 
 3) Installer PHP et les modules requis :
     CentOS 7 :
