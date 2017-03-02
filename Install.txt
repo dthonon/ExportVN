@@ -35,7 +35,7 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian => 
           => add a line below if you want to be able to access postgresql from external.
           host all all  0.0.0.0/0   md5
         $ sudo systemctl restart  postgresql-9.6.service
-        $ sudo -iu postrgres
+        $ sudo -iu postgres
         $ psql
         CREATE EXTENSION adminpack;
         CREATE ROLE adm_export LOGIN PASSWORD 'whateveryouwant' SUPERUSER;
