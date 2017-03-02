@@ -1,5 +1,5 @@
 Procédure d'installation sur Linux.
-Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
+Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian => Ne pas utiliser 
 
 1) Préparer l'installation
     CentOS 7 :
@@ -8,11 +8,31 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
         $ sudo yum install git
         $ sudo yum install mailx
 
+    Oracle Linux 7 :
+        $ wget https://fr2.rpmfind.net/linux/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
+        $ sudo rpm -ivh epel-release-7-9.noarch.rpm
+        $ sudo yum update
+        $ sudo yum install git
+        $ sudo yum install mailx
+
     Ubuntu 16.04 :
         $ sudo apt install git
+        
+2) Installer postgres (9.6 actuellement)
 
-2) Installer PHP et les modules requis :
+    Oracle Linux 7 :
+        $ wget https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-oraclelinux96-9.6-3.noarch.rpm
+        $ sudo rpm -ivh pgdg-oraclelinux96-9.6-3.noarch.rpm
+        $ sudo yum install postgresql96-server postgresql96-contrib
+        $ sudo /usr/pgsql-9.6/bin/postgresql96-setup initdb
+        $ sudo systemctl enable postgresql-9.6.service
+        $ sudo systemctl start postgresql-9.6.service
+
+3) Installer PHP et les modules requis :
     CentOS 7 :
+        $ sudo yum install php php-pear php-pgsql php-pecl-oauth
+
+    Oracle Linux 7 :
         $ sudo yum install php php-pear php-pgsql php-pecl-oauth
 
     Ubuntu 16.04 :
@@ -20,24 +40,21 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian
 
     Puis configurer ($ sudo nano /etc/php.ini) le paramètre date.timezone = Europe/Paris
 
-3) Installer log4php
-    CentOS 7 et Ubuntu 16.04 :
+4) Installer log4php
         $ sudo pear channel-discover pear.apache.org/log4php
         $ sudo pear install log4php/Apache_log4php
 
-4) Installer les scripts de téléchargement
-    CentOS 7 et Ubuntu 16.04 :
+5) Installer les scripts de téléchargement
         $ git clone https://github.com/dthonon/ExportVN
 
-5) configurer une copie locale des scripts de lancement
-    CentOS 7 et Ubuntu 16.04 :
+6) configurer une copie locale des scripts de lancement
         $ cd ExportVN
         $ ./evn.sh config
         puis renseigner les valeurs propres à votre site
         $ ./evn.sh init
         puis exécuter le script depuis le compte postgres
 
-6) Utilisation
+7) Utilisation
     CentOS 7 et Ubuntu 16.04 :
         $ ./evn.sh all
 
