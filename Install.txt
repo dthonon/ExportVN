@@ -10,9 +10,12 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian => 
 
     Oracle Linux 7 :
         $ sudo yum install wget nano git mailx
+        $ sudo nano /etc/locale.conf
+          => LANG="fr_FR.UTF-8"
         $ wget https://fr2.rpmfind.net/linux/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
         $ sudo rpm -ivh epel-release-7-9.noarch.rpm
         $ sudo yum update
+        $ sudo reboot
 
     Ubuntu 16.04 :
         $ sudo apt install git
