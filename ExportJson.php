@@ -200,7 +200,7 @@ class DownloadTable
                     $params = array(
                         'user_pw' => $this->user_pw,
                         'user_email' => $this->user_email,
-                        'is_used' => 1,
+                        # 'is_used' => 1,
                         'id_taxo_group' => $idQuery
                         );
                     break;
