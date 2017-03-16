@@ -299,8 +299,9 @@ GRANT ALL ON TABLE v_species TO evn_db_group;
 -- View: v_observations, to replace previous denormalized observations table
 CREATE OR REPLACE VIEW v_observations AS
  SELECT *
-   FROM observations, v_species, v_places
-   WHERE (observations.id_species = v_species.species_id) AND (observations.id_place = v_places.places_id);
+   FROM observations
+   LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
+   LEFT JOIN export.v_places ON observations.id_place = v_places.places_id;
 
 GRANT ALL ON TABLE v_species TO postgres;
 GRANT ALL ON TABLE v_species TO evn_db_group;

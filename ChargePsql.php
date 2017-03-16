@@ -939,6 +939,10 @@ class StoreFile
                      if ($this->tracing) $this->log->trace('  project_code => ' . $data['project_code']);
                      $obs['project_code'] = $data['project_code'];
                      break;
+                     case 'project_name':
+                         if ($this->tracing) $this->log->trace('  project_name => ' . $data['project_name']);
+                         $obs['project_name'] = $data['project_name'];
+                         break;
                  case 'admin_hidden':
                      if ($this->tracing) $this->log->trace('  admin_hidden => ' . $data['admin_hidden']);
                      $obs['admin_hidden'] = $data['admin_hidden'];
