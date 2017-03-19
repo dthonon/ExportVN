@@ -119,6 +119,10 @@ case "$cmd" in
         then
             mkdir ~/${config[evn_file_store]}
         fi
+        if [[ ! -d ~/${config[evn_file_store]}/backup ]]
+        then
+            mkdir ~/${config[evn_file_store]}/backup
+        fi
         if [[ ! -d ~/${config[evn_sql_scripts]} ]]
         then
             mkdir ~/${config[evn_sql_scripts]}
@@ -139,9 +143,22 @@ case "$cmd" in
 
     download)
         echo "$(date '+%F %T') - INFO - Téléchargement depuis le site : ${config[evn_site]} à $(date)"
+        # Check directories
+        if [[ ! -d ~/${config[evn_file_store]} ]]
+        then
+            mkdir ~/${config[evn_file_store]}
+        fi
+        if [[ ! -d ~/${config[evn_file_store]}/backup ]]
+        then
+            mkdir ~/${config[evn_file_store]}/backup
+        fi
+        if [[ ! -d ~/${config[evn_sql_scripts]} ]]
+        then
+            mkdir ~/${config[evn_sql_scripts]}
+        fi
         # Remove previous downloaded files
-        echo "$(date '+%F %T') - INFO - Suppression des fichiers précédents"
-        rm -f ~/${config[evn_file_store]}/*.json
+        echo "$(date '+%F %T') - INFO - Déplacement des fichiers précédents"
+        mv -f ~/${config[evn_file_store]}/*.json ~/${config[evn_file_store]}/backup
 
         # Download from biolovision and store in json
         php ~/ExportVN/ExportJson.php \
