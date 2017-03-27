@@ -396,34 +396,34 @@ unset($species);
 // Geographical information
 // ------------------------
 // Download and store territorial_units in database
-// $territorial_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'territorial_units',
-//                                        $options['file_store'], 10);
-// $territorial_units->download($oauth);
-// unset($territorial_units);
-//
-// // Download and store grids in database
-// $grids = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'grids',
-//                            $options['file_store'], 10);
-// $grids->download($oauth);
-// unset($grids);
-//
-// // Download and store local_admin_units in database. Must be done first for other object to use latest version
-// $local_admin_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'local_admin_units',
-//                                        $options['file_store'], 10);
-// $local_admin_units->download($oauth);
-// unset($local_admin_units);
-//
-// // Download and store places in database, subquery by local_admin_units
-// $places = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'places',
-//                             $options['file_store'], 1000, DownloadTable::ADMIN_UNITS_LIST);
-// $places->download($oauth);
-// unset($places);
+$territorial_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'territorial_units',
+                                       $options['file_store'], 10);
+$territorial_units->download($oauth);
+unset($territorial_units);
+
+// Download and store grids in database
+$grids = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'grids',
+                           $options['file_store'], 10);
+$grids->download($oauth);
+unset($grids);
+
+// Download and store local_admin_units in database. Must be done first for other object to use latest version
+$local_admin_units = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'local_admin_units',
+                                       $options['file_store'], 10);
+$local_admin_units->download($oauth);
+unset($local_admin_units);
+
+// Download and store places in database, subquery by local_admin_units
+$places = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'places',
+                            $options['file_store'], 1000, DownloadTable::ADMIN_UNITS_LIST);
+$places->download($oauth);
+unset($places);
 
 // ----------------
 // Observation data
 // ----------------
 // Download and store observations in database, subquery by taxo_groups
-// $observations = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'observations',
-//                                   $options['file_store'], 500, DownloadTable::TAXO_LIST);
-// $observations->download($oauth);
-// unset($observations);
+$observations = new DownloadTable($options['site'], $options['user_email'], $options['user_pw'], 'observations',
+                                  $options['file_store'], 500, DownloadTable::TAXO_LIST);
+$observations->download($oauth);
+unset($observations);
