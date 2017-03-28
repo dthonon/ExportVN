@@ -376,20 +376,12 @@ CREATE OR REPLACE VIEW v_observations AS
     v_places.municipality,
     v_places.insee,
     v_places.county
-   FROM export.observations
-     LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
-     LEFT JOIN export.v_places ON observations.id_place = v_places.places_id;
-
-ALTER TABLE export.v_observations
-  OWNER TO xfer38;
-CREATE OR REPLACE VIEW v_observations AS
- SELECT *
    FROM observations
-   LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
-   LEFT JOIN export.v_places ON observations.id_place = v_places.places_id;
+     LEFT JOIN v_species ON observations.id_species = v_species.species_id
+     LEFT JOIN v_places ON observations.id_place = v_places.places_id;
 
-GRANT ALL ON TABLE v_species TO postgres;
-GRANT ALL ON TABLE v_species TO evn_db_group;
+GRANT ALL ON TABLE v_observations TO postgres;
+GRANT ALL ON TABLE v_observations TO evn_db_group;
 
 -- View: v_observations_simple, for main columns
 CREATE OR REPLACE VIEW v_observations_simple AS
@@ -415,8 +407,8 @@ CREATE OR REPLACE VIEW v_observations_simple AS
     v_places.municipality,
     v_places.insee
    FROM export.observations
-     LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
-     LEFT JOIN export.v_places ON observations.id_place = v_places.places_id;
+     LEFT JOIN v_species ON observations.id_species = v_species.species_id
+     LEFT JOIN v_places ON observations.id_place = v_places.places_id;
 
-     GRANT ALL ON TABLE v_species TO postgres;
-     GRANT ALL ON TABLE v_species TO evn_db_group;
+GRANT ALL ON TABLE v_observations_simple TO postgres;
+GRANT ALL ON TABLE v_observations_simple TO evn_db_group;
