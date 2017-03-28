@@ -298,6 +298,91 @@ GRANT ALL ON TABLE v_species TO evn_db_group;
 
 -- View: v_observations, to replace previous denormalized observations table
 CREATE OR REPLACE VIEW v_observations AS
+ SELECT observations.date,
+    observations.id_species,
+    observations.id_place,
+    observations.id_observer,
+    observations.observer_name,
+    observations.id_sighting,
+    observations.timing_date,
+    observations.observer_coord_lat,
+    observations.observer_coord_lon,
+    observations."precision",
+    observations.estimation_code,
+    observations.count,
+    observations.altitude,
+    observations.flight_number,
+    observations.atlas_grid_name,
+    observations.comment,
+    observations.project,
+    observations.insert_date,
+    observations.update_date,
+    observations.entity,
+    observations.hidden,
+    observations.admin_hidden,
+    observations.admin_hidden_type,
+    observations.hidden_comment,
+    observations.project_code,
+    observations.project_name,
+    observations.behaviours_list,
+    observations.count_string,
+    observations.export_date,
+    observations.has_death,
+    observations.extended_info_mortality_cause,
+    observations.extended_info_mortality_time_found,
+    observations.extended_info_mortality_comment,
+    observations.extended_info_mortality_collision_road_type,
+    observations.extended_info_mortality_collision_track_id,
+    observations.extended_info_mortality_collision_near_element,
+    observations.extended_info_mortality_fishing_collected,
+    observations.extended_info_mortality_trap,
+    observations.extended_info_mortality_response,
+    observations.extended_info_mortality_radio,
+    observations.extended_info_mortality_recipient,
+    observations.extended_info_mortality_trap_circonstances,
+    observations.extended_info_mortality_predation,
+    observations.id_form_universal,
+    observations.time_start,
+    observations.time_stop,
+    observations.id_form,
+    observations.extended_info_mortality_collision_km_point,
+    observations.extended_info_mortality_poison,
+    observations.extended_info_mortality_electric_cause,
+    observations.extended_info_mortality_electric_line_type,
+    observations.details_list,
+    observations.atlas_code,
+    observations.extended_info_gypaetus_barbatus_data,
+    observations.extended_info_mortality_fishing_condition,
+    observations.extended_info_mortality_fishing_foreign_body,
+    observations.extended_info_mortality_fishing_mark,
+    observations.extended_info_colony_nests,
+    observations.extended_info_colony_occupied_nests,
+    observations.extended_info_colony_couples,
+    observations.extended_info_colony_extended_list,
+    observations.extended_info_colony_nests_is_min,
+    observations.extended_info_mortality_electric_line_configuration,
+    observations.extended_info_mortality_electric_line_configuration_neutralised,
+    observations.extended_info_mortality_electric_hta_pylon_id,
+    observations.extended_info_mortality_capture,
+    observations.the_geom::geometry(Point, 2154),
+    observations.coord_lon_l93,
+    observations.coord_lat_l93,
+    observations.date_year,
+    v_species.species_id,
+    v_species.french_name,
+    v_species.latin_name,
+    v_places.places_id,
+    v_places.places_name,
+    v_places.municipality,
+    v_places.insee,
+    v_places.county
+   FROM export.observations
+     LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
+     LEFT JOIN export.v_places ON observations.id_place = v_places.places_id;
+
+ALTER TABLE export.v_observations
+  OWNER TO xfer38;
+CREATE OR REPLACE VIEW v_observations AS
  SELECT *
    FROM observations
    LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
@@ -305,3 +390,33 @@ CREATE OR REPLACE VIEW v_observations AS
 
 GRANT ALL ON TABLE v_species TO postgres;
 GRANT ALL ON TABLE v_species TO evn_db_group;
+
+-- View: v_observations_simple, for main columns
+CREATE OR REPLACE VIEW v_observations_simple AS
+ SELECT observations.date,
+    observations.observer_name,
+    observations.id_sighting,
+    observations."precision",
+    observations.estimation_code,
+    observations.count,
+    observations.altitude,
+    observations.hidden,
+    observations.admin_hidden,
+    observations.admin_hidden_type,
+    observations.has_death,
+    observations.atlas_code,
+    observations.the_geom::geometry(Point, 2154),
+    observations.date_year,
+    v_species.species_id,
+    v_species.french_name,
+    v_species.latin_name,
+    v_places.places_id,
+    v_places.places_name,
+    v_places.municipality,
+    v_places.insee
+   FROM export.observations
+     LEFT JOIN export.v_species ON observations.id_species = v_species.species_id
+     LEFT JOIN export.v_places ON observations.id_place = v_places.places_id;
+
+     GRANT ALL ON TABLE v_species TO postgres;
+     GRANT ALL ON TABLE v_species TO evn_db_group;
