@@ -53,6 +53,7 @@ Note : le téléchargement ne fonctionne pas correctement sous Ubuntu/Debian => 
         $ sudo nano /var/lib/pgsql/9.6/data/postgresql.conf
           => change #listen_addresses='localhost' to listen_addresses='*' if you want postgresql to run on all ips.
         $  sudo nano /var/lib/pgsql/9.6/data/pg_hba.conf
+          => change ident to md5 for local cnx
           => add a line below if you want to be able to access postgresql from external.
           host all all  0.0.0.0/0   md5
         $ sudo systemctl restart  postgresql-9.6.service
