@@ -174,8 +174,6 @@ case "$cmd" in
         ;;
 
     store)
-        echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
-
         # Prepare password for psql
         echo "${config[evn_db_host]}:${config[evn_db_port]}:${config[evn_db_name]}:${config[evn_db_user]}:${config[evn_db_pw]}" > ~/.pgpass
         chmod 0600 ~/.pgpass
@@ -183,12 +181,14 @@ case "$cmd" in
         # Pre-processing sql script
         if [[ -f ~/${config[evn_sql_scripts]}/Pre_store.sql ]]  # Check if script exists
         then
+            echo "$(date '+%F %T') - INFO - Préparation du chargement dans la base ${config[evn_db_name]}"
             env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
                 psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
                 -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Pre_store.sql
         fi
 
         # Store downloaded json to postgres db
+        echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
         php ~/ExportVN/ChargePsql.php \
         --db_host=${config[evn_db_host]} \
         --db_port=${config[evn_db_port]} \
@@ -214,7 +214,7 @@ case "$cmd" in
                 -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Post_store.sql
         fi
 
-        rm -f ~/.pgpass
+#        rm -f ~/.pgpass
         echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
 

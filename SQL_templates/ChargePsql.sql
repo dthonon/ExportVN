@@ -412,7 +412,7 @@ CREATE OR REPLACE VIEW v_observations_simple AS
     v_places.places_name,
     v_places.municipality,
     v_places.insee
-   FROM export.observations
+   FROM observations
      LEFT JOIN v_species ON observations.id_species = v_species.species_id
      LEFT JOIN v_places ON observations.id_place = v_places.places_id;
 
