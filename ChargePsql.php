@@ -984,6 +984,10 @@ class StoreFile
                      if ($this->tracing) $this->log->trace('  project => ' . $data['project']);
                      $obs['project'] = $data['project'];
                      break;
+                 case 'committees_validation':
+                     if ($this->tracing) $this->log->trace('  committees_validation => ' . $data['committees_validation']);
+                     $obs['committees_validation'] = json_encode($data['committees_validation']);
+                     break;
                  case 'insert_date':
                      $this->bDate($value, $obs, 'insert_');
                      break;
