@@ -41,7 +41,7 @@ cmd=$1
 cd ~/ExportVN
 
 # Logging file
-evn_log=~/evn_all.log
+evn_log=~/evn_all_$(date '+%Y-%m-%d').log
 
 # Default mail address for results mail, overriden by config file
 config[evn_admin_mail]="d.thonon9@gmail.com"
@@ -219,20 +219,17 @@ case "$cmd" in
         ;;
 
     all)
-        if [[ -f $evn_log.gz ]]  # Check if exists and move
-        then
-            mv $evn_log.gz $evn_log.1.gz
-        fi
         echo "$(date '+%F %T') - INFO - Début téléchargement depuis le site : ${config[evn_site]}" > $evn_log
         $0 download >> $evn_log
         echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}" >> $evn_log
         $0 store >> $evn_log
         echo "$(date '+%F %T') - INFO - Fin transfert depuis le site : ${config[evn_site]}" >> $evn_log
         links -dump ${config[evn_site]}index.php?m_id=23 | fgrep "Les part" | sed 's/Les partenaires       /Total des contributions :/' > ~/mail_fin.txt
+        fgrep -c "observations:" $evn_log  >> ~/mail_fin.txt
         echo "Bilan du script : ERROR / WARN :" >> ~/mail_fin.txt
         fgrep -c "ERROR" $evn_log >> ~/mail_fin.txt
         fgrep -c "WARN" $evn_log >> ~/mail_fin.txt
-        tail -15 $evn_log  >> ~/mail_fin.txt
+	tail -15 $evn_log >> ~/mail_fin.txt
         gzip -f $evn_log
         echo "$(date '+%F %T') - INFO - Fin de l'export des données"
         mailx -s "Chargement de ${config[evn_site]}" -a $evn_log.gz ${config[evn_admin_mail]} < ~/mail_fin.txt
