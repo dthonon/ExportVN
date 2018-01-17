@@ -179,25 +179,25 @@ case "$cmd" in
         chmod 0600 ~/.pgpass
 
         # Pre-processing sql script
-        if [[ -f ~/${config[evn_sql_scripts]}/Pre_store.sql ]]  # Check if script exists
-        then
-            echo "$(date '+%F %T') - INFO - Préparation du chargement dans la base ${config[evn_db_name]}"
-            env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
-                psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
-                -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Pre_store.sql
-        fi
+       if [[ -f ~/${config[evn_sql_scripts]}/Pre_store.sql ]]  # Check if script exists
+       then
+           echo "$(date '+%F %T') - INFO - Préparation du chargement dans la base ${config[evn_db_name]}"
+           env PGOPTIONS="-c search_path=${config[evn_db_schema]},public -c client-min-messages=WARNING" \
+               psql -q -h ${config[evn_db_host]} -p ${config[evn_db_port]} -U ${config[evn_db_user]} \
+               -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Pre_store.sql
+       fi
 
         # Store downloaded json to postgres db
-        echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
-        php ~/ExportVN/ChargePsql.php \
-        --db_host=${config[evn_db_host]} \
-        --db_port=${config[evn_db_port]} \
-        --db_name=${config[evn_db_name]} \
-        --db_schema=${config[evn_db_schema]} \
-        --db_user=${config[evn_db_user]} \
-        --db_pw=${config[evn_db_pw]}\
-        --file_store=${config[evn_file_store]} \
-        --logging=${config[evn_logging]}
+       echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}"
+       php ~/ExportVN/ChargePsql.php \
+       --db_host=${config[evn_db_host]} \
+       --db_port=${config[evn_db_port]} \
+       --db_name=${config[evn_db_name]} \
+       --db_schema=${config[evn_db_schema]} \
+       --db_user=${config[evn_db_user]} \
+       --db_pw=${config[evn_db_pw]}\
+       --file_store=${config[evn_file_store]} \
+       --logging=${config[evn_logging]}
 
         echo "$(date '+%F %T') - INFO - Finalisation de la base de données"
         cp -f SQL_templates/ChargePsql.sql ~/${config[evn_sql_scripts]}/ChargePsql.sql
@@ -214,22 +214,22 @@ case "$cmd" in
                 -d "dbname=${config[evn_db_name]}" -f ~/${config[evn_sql_scripts]}/Post_store.sql
         fi
 
-#        rm -f ~/.pgpass
+       rm -f ~/.pgpass
         echo "$(date '+%F %T') - INFO - Fin du chargement dans la base "
         ;;
 
     all)
         echo "$(date '+%F %T') - INFO - Début téléchargement depuis le site : ${config[evn_site]}" > $evn_log
         $0 download >> $evn_log
+        links -dump ${config[evn_site]}index.php?m_id=23 | fgrep "Les part" | sed 's/Les partenaires       /Total des contributions :/' > ~/mail_fin.txt
         echo "$(date '+%F %T') - INFO - Chargement des fichiers json dans la base ${config[evn_db_name]}" >> $evn_log
         $0 store >> $evn_log
         echo "$(date '+%F %T') - INFO - Fin transfert depuis le site : ${config[evn_site]}" >> $evn_log
-        links -dump ${config[evn_site]}index.php?m_id=23 | fgrep "Les part" | sed 's/Les partenaires       /Total des contributions :/' > ~/mail_fin.txt
-        fgrep -c "observations:" $evn_log  >> ~/mail_fin.txt
+        links -dump ${config[evn_site]}index.php?m_id=23 | fgrep "Les part" | sed 's/Les partenaires       /Total des contributions :/' >> $evn_log
         echo "Bilan du script : ERROR / WARN :" >> ~/mail_fin.txt
         fgrep -c "ERROR" $evn_log >> ~/mail_fin.txt
         fgrep -c "WARN" $evn_log >> ~/mail_fin.txt
-	tail -15 $evn_log >> ~/mail_fin.txt
+	    tail -15 $evn_log >> ~/mail_fin.txt
         gzip -f $evn_log
         echo "$(date '+%F %T') - INFO - Fin de l'export des données"
         mailx -s "Chargement de ${config[evn_site]}" -a $evn_log.gz ${config[evn_admin_mail]} < ~/mail_fin.txt
